@@ -7,7 +7,7 @@ export interface IPendingVerification extends Document {
   // for signup: username + hashedPassword; for reset: these may be undefined
   name?: string | null;
   organization?: string | null;
-  hashedPassword?: string | null;
+  password?: string | null;
   otpHash: string;
   purpose: PendingPurpose;
   otpExpiresAt: Date;
@@ -19,7 +19,7 @@ const PendingVerificationSchema = new Schema<IPendingVerification>(
     email: { type: String, required: true, lowercase: true, trim: true, index: true },
     name: { type: String, default: null },
     organization: { type: String, default: null },
-    hashedPassword: { type: String, default: null },
+    password: { type: String, default: null },
     otpHash: { type: String, required: true },
     purpose: { type: String, enum: ['signup', 'reset'], required: true },
     otpExpiresAt: { type: Date, required: true },

@@ -35,16 +35,28 @@ const userSchema: Schema<IUser> = new Schema(
 
 // 3️⃣ Pre-save hook to hash password
 userSchema.pre<IUser>('save', async function (next) {
-  if (!this.isModified('password')) return next();
-
+  // isModified -> It does NOT look at whether the value was hashed, is hashed, was previously hashed, or looks different.
+  // It only looks at:
+  // Did we call .password = something before .save()?
+  if (!this.isModified('password')) return;
+  // If password WAS modified → hash it
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
+  console.log('Password is hashed! ', this.password);
 });
 
 // 4️⃣ Method to compare password during login
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  const isMatch = bcrypt.compare(candidatePassword, this.password);
+  // console.log(
+  //   'Checkpoint 4 :- isMatch - ',
+  //   isMatch,
+  //   'candidate password - ',
+  //   candidatePassword,
+  //   'hashed password - ',
+  //   this.password,
+  // );
+  return isMatch;
 };
 
 // 5️⃣ Create the User model

@@ -103,13 +103,13 @@ This project focuses on building a **secure, scalable, and maintainable backend*
 
 **Base URL:** `/api/v1/resume-analysis`
 
-| Method | Endpoint | Description                       | Request Body                          | Response Body                        |
-| ------ | -------- | --------------------------------- | ------------------------------------- | ------------------------------------ |
-| POST   | `/`      | Create new resume analysis record | `{ jobId, resumeId, analysisResult }` | `{ success: true, resumeAnalysis }`  |
-| GET    | `/`      | Get all resume analyses           | —                                     | `{ success: true, analyses }`        |
-| GET    | `/:id`   | Get resume analysis by ID         | —                                     | `{ success: true, analysis }`        |
-| PUT    | `/:id`   | Update resume analysis by ID      | `{ analysisResult?, score? }`         | `{ success: true, updatedAnalysis }` |
-| DELETE | `/:id`   | Delete resume analysis by ID      | —                                     | `{ success: true, message }`         |
+| Method | Endpoint | Description                       | Request Body                                     | Response Body                        |
+| ------ | -------- | --------------------------------- | ------------------------------------------------ | ------------------------------------ |
+| POST   | `/`      | Create new resume analysis record | `{ jobDescriptionId, resumeId, analysisResult }` | `{ success: true, resumeAnalysis }`  |
+| GET    | `/`      | Get all resume analyses           | —                                                | `{ success: true, analyses }`        |
+| GET    | `/:id`   | Get resume analysis by ID         | —                                                | `{ success: true, analysis }`        |
+| PUT    | `/:id`   | Update resume analysis by ID      | `{ analysisResult?, score? }`                    | `{ success: true, updatedAnalysis }` |
+| DELETE | `/:id`   | Delete resume analysis by ID      | —                                                | `{ success: true, message }`         |
 
 ---
 

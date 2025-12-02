@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IResumeAnalysis extends Document {
   resumeId: mongoose.Types.ObjectId;
-  jobId: mongoose.Types.ObjectId;
+  jobDescriptionId: mongoose.Types.ObjectId;
   score: number;
   fitLevel: 'High' | 'Medium' | 'Low';
   matchedSkills: string[];
@@ -19,7 +19,7 @@ const resumeAnalysisSchema = new Schema<IResumeAnalysis>(
       ref: 'Resume',
       required: true,
     },
-    jobId: {
+    jobDescriptionId: {
       type: Schema.Types.ObjectId,
       ref: 'Job',
       required: true,

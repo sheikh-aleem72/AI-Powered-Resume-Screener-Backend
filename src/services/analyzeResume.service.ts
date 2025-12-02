@@ -4,13 +4,13 @@ import { createAnalysisService, findAnalysisByResumeIdAndJobIdService } from './
 import { getJobService } from './job.service';
 import { parseAndSaveResumeService } from './parsedResume.service';
 
-export const analyzeResumeService = async (resumeUrl: string, jobId: string) => {
+export const analyzeResumeService = async (resumeUrl: string, jobDescriptionId: string) => {
   // 1. Parse resume
   const parsedResume = await parseAndSaveResumeService(resumeUrl);
 
   // 2. Analyze Resume
   // Get job description from jobId
-  const jobDescription = await getJobService(jobId);
+  const jobDescription = await getJobService(jobDescriptionId);
   if (jobDescription == null) {
     throw new AppError('Job Description not found!', 404);
   }
@@ -18,7 +18,7 @@ export const analyzeResumeService = async (resumeUrl: string, jobId: string) => 
   // Check if analysis is already exists
   const analysis = await findAnalysisByResumeIdAndJobIdService(
     parsedResume.resumeId.toString(),
-    jobId,
+    jobDescriptionId,
   );
   if (analysis != null) {
     return analysis;
@@ -32,7 +32,7 @@ export const analyzeResumeService = async (resumeUrl: string, jobId: string) => 
 
   // 3. Save analysis
   resumeAnalysis.resumeId = parsedResume.resumeId.toString();
-  resumeAnalysis.jobId = jobId;
+  resumeAnalysis.jobDescriptionId = jobDescriptionId;
   const newResumeAnalysis = await createAnalysisService(resumeAnalysis);
 
   // 4. Send response back.

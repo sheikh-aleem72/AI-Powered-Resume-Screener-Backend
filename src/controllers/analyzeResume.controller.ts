@@ -10,8 +10,8 @@ interface AuthRequest extends ExRequest {
 
 export const analyzeResumeController = async (req: AuthRequest, res: Response) => {
   try {
-    const { resumeUrl, jobId } = req.body;
-    const result = await analyzeResumeService(resumeUrl, jobId);
+    const { resumeUrl, jobDescriptionId } = req.body;
+    const result = await analyzeResumeService(resumeUrl, jobDescriptionId);
     return res.status(200).json({ success: true, parsedData: result });
   } catch (error) {
     // ✅ Handle operational (AppError) errors gracefully

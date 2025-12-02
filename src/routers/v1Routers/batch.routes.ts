@@ -7,6 +7,6 @@ const router = express.Router();
 // For postman testing
 router.post('/create', authMiddleware, createBatchController);
 
-router.post('/update', authMiddleware, updateBatchController);
+router.post('/update', updateBatchController);
 
 export default router;

@@ -10,9 +10,9 @@ interface AuthRequest extends ExRequest {
 
 export const createBatchController = async (req: AuthRequest, res: Response) => {
   try {
-    const { batchId, jobDescriptionId, resumes } = req.body;
+    const { jobDescriptionId, resumes } = req.body;
 
-    const batch = await createBatchService({ batchId, jobDescriptionId, resumes });
+    const batch = await createBatchService({ jobDescriptionId, resumes });
 
     return res.status(200).json({ success: true, data: batch });
   } catch (error) {
@@ -35,7 +35,7 @@ export const createBatchController = async (req: AuthRequest, res: Response) => 
 export const updateBatchController = async (req: AuthRequest, res: Response) => {
   try {
     const { batchId, status, error } = req.body;
-    console.log('Batch id & status', batchId, status);
+    // console.log('Batch id & status', batchId, status);
     const updatedBatch = await updateBatchService(batchId, { status, error });
 
     return res.status(200).json({

@@ -5,6 +5,11 @@ export interface IBatch extends Document {
   jobDescriptionId: string; // refers to job description
   resumes: string[];
   status: 'queued' | 'processing' | 'completed' | 'failed';
+  totalResumes: number;
+  processedResumes: number;
+  completedResumes: number;
+  failedResumes: number;
+
   error?: string;
 }
 
@@ -13,6 +18,10 @@ const batchSchema = new Schema<IBatch>(
     batchId: { type: String, required: true, unique: true },
     jobDescriptionId: { type: String, required: true },
     resumes: [{ type: String, required: true }],
+    totalResumes: { type: Number, required: true },
+    processedResumes: { type: Number, default: 0 },
+    completedResumes: { type: Number, default: 0 },
+    failedResumes: { type: Number, default: 0 },
     status: {
       type: String,
       enum: ['queued', 'processing', 'completed', 'failed'],

@@ -1,6 +1,6 @@
 import { publishBatchJob } from '../queues/pubSubPublisher';
 import { publishRQBatchJob } from '../queues/rqPublisher';
-import { createBatch, updateBatchStatus } from '../repositories/batch.repository';
+import { createBatch, getBatchById, updateBatchStatus } from '../repositories/batch.repository';
 import { IBatch } from '../schema/batch.model';
 import { AppError } from '../utils/AppErrors';
 import { generateBatchId } from '../utils/generateBatchIds';
@@ -13,6 +13,7 @@ export const createBatchService = async (data: Partial<IBatch>) => {
   // Generate BatchId
   const batchId = await generateBatchId();
   data.batchId = batchId;
+  data.totalResumes = data.resumes.length;
 
   const batch = await createBatch(data);
 
@@ -27,6 +28,19 @@ export const createBatchService = async (data: Partial<IBatch>) => {
   return batch;
 };
 
+export const getBatchByIdService = async (batchId: string) => {
+  if (!batchId) {
+    throw new AppError('BatchId is required!', 400);
+  }
+
+  const batch = await getBatchById(batchId);
+  if (!batch) {
+    throw new AppError('Batch not found!', 404);
+  }
+
+  return batch;
+};
+
 export const updateBatchService = async (batchId: string, data: Partial<IBatch>) => {
   // console.log('Batch id & status', batchId, data.status);
 
@@ -34,13 +48,22 @@ export const updateBatchService = async (batchId: string, data: Partial<IBatch>)
     throw new AppError('batchId and status are required!', 400);
   }
 
+  const batch = await getBatchByIdService(batchId);
+
   // console.log('Checkpoint');
   const update = {
     status: data.status,
     error: data.status === 'failed' ? data.error : undefined,
   };
 
-  const updatedBatch = await updateBatchStatus(batchId, data);
+  const isFailed = data.status === 'failed';
+
+  const updatedBatch = await updateBatchStatus(batchId, {
+    status: isFailed ? 'failed' : 'completed',
+    processedResumes: batch.totalResumes,
+    completedResumes: isFailed ? 0 : batch.totalResumes,
+    failedResumes: isFailed ? batch.totalResumes : 0,
+  });
 
   if (!updatedBatch) {
     throw new AppError('Batch not found', 404);

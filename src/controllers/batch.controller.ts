@@ -1,6 +1,10 @@
 import { Request as ExRequest, Response } from 'express';
 import { AppError } from '../utils/AppErrors';
-import { createBatchService, updateBatchService } from '../services/batch.service';
+import {
+  createBatchService,
+  getBatchByIdService,
+  updateBatchService,
+} from '../services/batch.service';
 
 interface AuthRequest extends ExRequest {
   user?: {
@@ -25,6 +29,30 @@ export const createBatchController = async (req: AuthRequest, res: Response) => 
 
     // ❌ Handle unexpected errors
     console.error('Error in createBatchController:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong on our side',
+    });
+  }
+};
+
+export const getBatchByIdController = async (req: AuthRequest, res: Response) => {
+  try {
+    const response = await getBatchByIdService(req.body.batchId);
+    return res.status(200).json({
+      success: true,
+      data: response,
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        status: error.statusCode,
+        message: error.message,
+      });
+    }
+
+    // ❌ Handle unexpected errors
+    console.error('Error in getBatchByIdController:', error);
     return res.status(500).json({
       status: 'error',
       message: 'Something went wrong on our side',

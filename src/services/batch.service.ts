@@ -4,6 +4,7 @@ import { createBatch, getBatchById, updateBatchStatus } from '../repositories/ba
 import { IBatch } from '../schema/batch.model';
 import { AppError } from '../utils/AppErrors';
 import { generateBatchId } from '../utils/generateBatchIds';
+import { generateResumeId } from '../utils/generateResumesId';
 
 export const createBatchService = async (data: Partial<IBatch>) => {
   if (!data.jobDescriptionId || !data.resumes) {
@@ -12,8 +13,16 @@ export const createBatchService = async (data: Partial<IBatch>) => {
 
   // Generate BatchId
   const batchId = await generateBatchId();
+  const resumes = [];
+
+  for (const resume of data.resumes) {
+    const resumeId = await generateResumeId();
+    resumes.push({ resumeId, resumeUrl: resume.resumeUrl, status: 'processing' });
+  }
+
   data.batchId = batchId;
   data.totalResumes = data.resumes.length;
+  data.resumes = resumes;
 
   const batch = await createBatch(data);
 
@@ -41,35 +50,59 @@ export const getBatchByIdService = async (batchId: string) => {
   return batch;
 };
 
-export const updateBatchService = async (batchId: string, data: Partial<IBatch>) => {
+export const updateBatchService = async (
+  batchId: string,
+  resumeId: string,
+  data: Partial<IBatch>,
+) => {
   // console.log('Batch id & status', batchId, data.status);
 
-  if (!batchId || !data.status) {
-    throw new AppError('batchId and status are required!', 400);
+  if (!batchId || !resumeId) {
+    throw new AppError('batchId and resumeId are required!', 400);
   }
 
   const batch = await getBatchByIdService(batchId);
 
   // console.log('Checkpoint');
-  const update = {
-    status: data.status,
-    error: data.status === 'failed' ? data.error : undefined,
-  };
+  // Update resume entry inside the batch document
+  const resumeEntry = batch.resumes.find((r) => r.resumeId === resumeId);
 
-  const isFailed = data.status === 'failed';
-
-  const updatedBatch = await updateBatchStatus(batchId, {
-    status: isFailed ? 'failed' : 'completed',
-    processedResumes: batch.totalResumes,
-    completedResumes: isFailed ? 0 : batch.totalResumes,
-    failedResumes: isFailed ? batch.totalResumes : 0,
-  });
-
-  if (!updatedBatch) {
-    throw new AppError('Batch not found', 404);
+  if (!resumeEntry) {
+    throw new AppError('Resume not found in batch!', 404);
   }
+
+  resumeEntry.status = data.status === 'completed' ? 'completed' : 'failed';
+
+  // Increment batch counters
+  batch.processedResumes += 1;
+
+  if (data.status === 'completed') {
+    batch.completedResumes += 1;
+  } else {
+    batch.failedResumes += 1;
+  }
+
+  // If all resumes finished → mark batch completed or failed
+  if (batch.processedResumes === batch.totalResumes) {
+    batch.status = batch.failedResumes > 0 ? 'failed' : 'completed';
+  } else {
+    batch.status = 'processing';
+  }
+
+  // const updatedBatch = await updateBatchStatus(batchId, {
+  //   status: isFailed ? 'failed' : 'completed',
+  //   processedResumes: batch.totalResumes,
+  //   completedResumes: isFailed ? 0 : batch.totalResumes,
+  //   failedResumes: isFailed ? batch.totalResumes : 0,
+  // });
+
+  await batch.save();
+
+  // if (!updatedBatch) {
+  //   throw new AppError('Batch not found', 404);
+  // }
 
   console.log(`✅ Batch ${batchId} marked as ${data.status}`);
 
-  return updatedBatch;
+  return batch;
 };

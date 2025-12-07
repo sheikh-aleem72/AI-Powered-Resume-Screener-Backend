@@ -58,7 +58,6 @@ export async function publishRQBatchJob(data: {
     await redis.lpush(`rq:queue:${RQ_QUEUE}`, queueTaskId);
 
     console.log(`📤 Job published for resume: ${resumeId}`);
-
-    return published;
   }
+  return published;
 }

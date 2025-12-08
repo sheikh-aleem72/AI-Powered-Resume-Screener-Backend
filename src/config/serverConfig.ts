@@ -20,6 +20,8 @@ interface EnvConfig {
   CLOUDINARY_API_KEY: string;
   PARSER_SERVICE_URL: string;
   REDIS_URL: string;
+  MAX_RESUMES_PER_BATCH: number;
+  MAX_TOTAL_BYTES_PER_BATCH: number;
 }
 
 const getEnvVar = (key: string): string => {
@@ -46,4 +48,6 @@ export const env: EnvConfig = {
   CLOUDINARY_CLOUD_NAME: getEnvVar('CLOUDINARY_CLOUD_NAME'),
   PARSER_SERVICE_URL: getEnvVar('PARSER_SERVICE_URL'),
   REDIS_URL: getEnvVar('REDIS_URL'),
+  MAX_RESUMES_PER_BATCH: 50,
+  MAX_TOTAL_BYTES_PER_BATCH: 200 * 1024 * 1024,
 };

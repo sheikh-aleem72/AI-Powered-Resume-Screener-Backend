@@ -52,6 +52,7 @@ export async function publishRQBatchJob(data: {
       data: payload, // Our JSON payload
       status: 'queued',
       description,
+      attempts: '0',
     });
 
     // 4. Push job onto RQ queue LIST

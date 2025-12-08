@@ -5,10 +5,34 @@ import { IBatch } from '../schema/batch.model';
 import { AppError } from '../utils/AppErrors';
 import { generateBatchId } from '../utils/generateBatchIds';
 import { generateResumeId } from '../utils/generateResumesId';
+import { env } from '../config/serverConfig';
 
 export const createBatchService = async (data: Partial<IBatch>) => {
   if (!data.jobDescriptionId || !data.resumes) {
     throw new AppError(`jobDescriptionId and resumes are required`, 400);
+  }
+
+  // Validate count of files and size
+  // ------------------------------------------------------
+  // 1. VALIDATE MAX RESUMES
+  // ------------------------------------------------------
+  if (data.resumes.length > env.MAX_RESUMES_PER_BATCH) {
+    throw new AppError(
+      `A batch cannot contain more than ${env.MAX_RESUMES_PER_BATCH} resumes`,
+      400,
+    );
+  }
+
+  // ------------------------------------------------------
+  // 2. VALIDATE TOTAL BYTES
+  // ------------------------------------------------------
+  const totalBytes = data.resumes.reduce((sum, r) => sum + (data.size ?? 0), 0);
+
+  if (totalBytes > env.MAX_TOTAL_BYTES_PER_BATCH) {
+    throw new AppError(
+      `Total batch size exceeds ${env.MAX_TOTAL_BYTES_PER_BATCH / (1024 * 1024)} MB`,
+      400,
+    );
   }
 
   // Generate BatchId
@@ -17,7 +41,7 @@ export const createBatchService = async (data: Partial<IBatch>) => {
 
   for (const resume of data.resumes) {
     const resumeId = await generateResumeId();
-    resumes.push({ resumeId, resumeUrl: resume.resumeUrl, status: 'processing' });
+    resumes.push({ resumeId, resumeUrl: resume.resumeUrl, status: 'queued' });
   }
 
   data.batchId = batchId;

@@ -9,6 +9,7 @@ export interface IBatch extends Document {
   processedResumes: number;
   completedResumes: number;
   failedResumes: number;
+  size: number;
 
   error?: string;
 }
@@ -37,6 +38,7 @@ const batchSchema = new Schema<IBatch>(
       enum: ['queued', 'processing', 'completed', 'failed'],
       default: 'queued',
     },
+    size: { type: Number, required: true },
     error: String,
   },
   { timestamps: true },

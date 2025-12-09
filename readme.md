@@ -7,149 +7,336 @@ This backend repo provides all the necessary APIs for user management, authentic
 
 This project focuses on building a **secure, scalable, and maintainable backend** using **Node.js, Express, TypeScript, and MongoDB**. It is designed to integrate seamlessly with a frontend application and provides a strong foundation for implementing advanced AI features in later stages.
 
----
+# 🚀 AI-Powered Resume Screener — Backend
 
-## Tech Stack
+**Node.js + TypeScript + Express + MongoDB + Redis + Python RQ Workers**
 
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Language:** TypeScript
-- **Database:** MongoDB with Mongoose ORM
-- **Authentication:** JWT (Access Token & Refresh Token)
-- **Email Service:** Nodemailer (OTP Verification)
-- **Password Security:** bcryptjs
-- **File Storage:** Cloudinary (for resume upload)
-- **AI Integration:** Gemini API (for resume parsing and analysis)
+A scalable, production-grade backend for intelligently analyzing resumes, matching candidates to job descriptions, and processing large resume batches using a distributed worker system.
 
----
+This repository implements:
 
-## Features (Completed Up To Stage 3.3)
+- Authentication + Authorization
+- Secure resume upload & metadata management
+- AI-powered parsing (microservice based)
+- Job description management
+- Background batch processing (Stage 4)
+- Distributed queue workers with retries and backoff
+- Atomic MongoDB updates for concurrency safety
 
-1. **User Signup & Login**
-   - Signup with email, password, role, and organization.
-   - Login with email and password.
-   - Passwords are securely hashed before storing in the database.
-
-2. **Authentication & Authorization**
-   - JWT-based access tokens (15 min expiry) and refresh tokens (7 days expiry).
-   - Protected routes using middleware to verify tokens.
-   - Token refresh endpoint to issue new access tokens when expired.
-
-3. **Email-Based OTP Verification**
-   - OTP sent to user’s email during signup and password reset.
-   - Pending verification stored in database until OTP is verified.
-   - Secure password reset flow using OTP.
-
-4. **Refresh Token Management**
-   - Refresh tokens securely stored in user records.
-   - Token rotation implemented for added security.
-
-5. **Resume Management**
-   - Upload resumes (PDF/DOCX) via Cloudinary.
-   - Store resume metadata and URL in MongoDB.
-   - Parse resumes via AI microservice (Gemini API) to extract structured data.
-
-6. **Job Description Management**
-   - Create, update, fetch, and delete job descriptions.
-   - Used for mapping candidate resumes to job requirements.
-
-7. **Resume Analysis (AI Stage)**
-   - AI-based matching of parsed resume data against job descriptions.
-   - Generates compatibility score and insights.
+This project is designed for **real companies**, **ATS platforms**, and **AI-driven recruiting systems**.
 
 ---
 
-## API Documentation
+# 🏗️ **Tech Stack**
 
-### Auth Routes
+### **Backend**
 
-| Method | Endpoint              | Description                                 | Request Body                                                 | Response Body                                           |
-| ------ | --------------------- | ------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------- |
-| POST   | `/auth/signup`        | Create pending user & send OTP              | `{ name, email, password, role?, organization? }`            | `{ success: true, message: "OTP sent to email" }`       |
-| POST   | `/auth/verify-otp`    | Verify OTP and create user / reset password | `{ email, otp, purpose: "signup" \| "reset", newPassword? }` | `{ success: true, accessToken?, refreshToken?, user? }` |
-| POST   | `/auth/signin`        | User login                                  | `{ email, password }`                                        | `{ success: true, accessToken, refreshToken, user }`    |
-| POST   | `/auth/refresh-token` | Refresh expired access token                | `{ refreshToken }`                                           | `{ success: true, accessToken, refreshToken }`          |
+- Node.js
+- Express.js
+- TypeScript
+- MongoDB + Mongoose
+- Redis (queue broker)
+- BullMQ-style publishing (Node → Redis)
+- RQ Workers (Python)
 
-**Note:** All protected routes require `Authorization: Bearer <accessToken>` header.
+### **AI / Microservices**
 
----
+- Gemini API (Parsing & Analysis)
+- Python Resume Parser Service
+- Distributed Worker Architecture
 
-### Resume Routes
+### **Security**
 
-**Base URL:** `/api/v1/resume`
+- JWT (Access + Refresh tokens)
+- OTP Email Verification (Nodemailer)
+- Password hashing (bcryptjs)
 
-| Method | Endpoint        | Description                                 | Request Body                      | Response Body                          |
-| ------ | --------------- | ------------------------------------------- | --------------------------------- | -------------------------------------- |
-| POST   | `/save-meta`    | Save resume metadata and Cloudinary URL     | `{ filename, url, size, format }` | `{ success: true, resumeId, message }` |
-| POST   | `/parse-resume` | Parse uploaded resume using AI microservice | `{ resumeUrl }`                   | `{ success: true, parsedResume }`      |
+### **File Storage**
 
----
-
-### Job Description Routes
-
-**Base URL:** `/api/v1/job`
-
-| Method | Endpoint | Description                    | Request Body                                                                                                     | Response Body                   |
-| ------ | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| POST   | `/`      | Create a new job description   | `{ title, company?, required_skills, prefered_skills?, experience_level?, min_experience_level?, description? }` | `{ success: true, job }`        |
-| GET    | `/`      | Get all job descriptions       | —                                                                                                                | `{ success: true, jobs }`       |
-| GET    | `/:id`   | Get a job description by ID    | —                                                                                                                | `{ success: true, job }`        |
-| PATCH  | `/:id`   | Update a job description by ID | `{ title?, description?, required_skills?, company?, prefered_skills?, min_experience_level? }`                  | `{ success: true, updatedJob }` |
-| DELETE | `/:id`   | Delete a job description by ID | —                                                                                                                | `{ success: true, message }`    |
+- Cloudinary (resume uploads)
 
 ---
 
-### Resume Analysis Routes
+# 🧠 **System Architecture (2025 Upgrade — Stage 4)**
 
-**Base URL:** `/api/v1/resume-analysis`
+```
 
-| Method | Endpoint | Description                       | Request Body                                     | Response Body                        |
-| ------ | -------- | --------------------------------- | ------------------------------------------------ | ------------------------------------ |
-| POST   | `/`      | Create new resume analysis record | `{ jobDescriptionId, resumeId, analysisResult }` | `{ success: true, resumeAnalysis }`  |
-| GET    | `/`      | Get all resume analyses           | —                                                | `{ success: true, analyses }`        |
-| GET    | `/:id`   | Get resume analysis by ID         | —                                                | `{ success: true, analysis }`        |
-| PUT    | `/:id`   | Update resume analysis by ID      | `{ analysisResult?, score? }`                    | `{ success: true, updatedAnalysis }` |
-| DELETE | `/:id`   | Delete resume analysis by ID      | —                                                | `{ success: true, message }`         |
+Client → Node API → MongoDB
+↓
+Redis Queue
+↓
+Python RQ Workers
+↓
+Node Callback Handler
+↓
+Atomic DB Update
 
----
+```
 
-## Environment Variables
+### ⭐ Key Highlights
 
-The following environment variables must be set:
+✔ Fully asynchronous resume processing  
+✔ Multi-worker concurrency support  
+✔ Atomic DB updates (no lost updates)  
+✔ Exponential retry & backoff  
+✔ Batch-level tracking & progress APIs  
+✔ Resumable job pipeline
 
-- PORT=5000
-- MONGODB_URI=<Your MongoDB Connection String>
-- JWT_ACCESS_SECRET=<Your JWT Access Secret>
-- JWT_REFRESH_SECRET=<Your JWT Refresh Secret>
-- SMTP_HOST=<SMTP Host>
-- SMTP_PORT=<SMTP Port>
-- SMTP_SECURE=<true/false>
-- SMTP_USER=<SMTP Email>
-- SMTP_PASS=<SMTP Password or App Password>
-- EMAIL_FROM=<Sender Email>
-- OTP_EXPIRES_MINUTES=5
-- CLOUDINARY_CLOUD_NAME=<Cloudinary Cloud Name>
-- CLOUDINARY_API_KEY=<Cloudinary API Key>
-- CLOUDINARY_API_SECRET=<Cloudinary API Secret>
-- PARSER_SERVICE_URL=<Parsing microservice url>
+This architecture supports both **high throughput (50+ resumes per batch)** and **fault-tolerant processing**.
 
 ---
 
-## Next Steps
+# 🔥 **Core Features**
 
-- Implement AI-based candidate-job matching algorithm.
-- Add recruiter dashboard and analytics endpoints.
-- Extend job filters (skills, location, experience).
-- Add pagination and search to job/resume endpoints.
-- Integrate structured AI insights visualization.
+## 1. **Authentication & User Management**
 
----
-
-## Contribution
-
-Feel free to contribute by creating pull requests, reporting issues, or suggesting improvements.  
-Make sure to follow the **existing code structure and TypeScript practices**.
+- Signup with OTP verification
+- Secure login with JWT
+- Refresh token rotation
+- Role & organization support
 
 ---
 
-## Developed by **Shekh Aalim**
+## 2. **Resume Upload + Metadata Management**
+
+- Upload to Cloudinary
+- Store metadata: name, URL, size, format
+- Resume ID auto-generated (`RESUME_YYYYMMDD_XXXX`)
+
+---
+
+## 3. **Job Description Management**
+
+- Create, update, list, delete
+- Required skills, preferred skills, experience
+
+---
+
+## 4. **AI-Powered Resume Parsing & Analysis**
+
+- Microservice architecture
+- Uses Gemini API for parsing
+- Extracts: education, experience, skills, achievements
+- Analysis engine compares resume vs job description
+
+---
+
+# ⚡ **Stage 4: High-Performance Batch Processing Pipeline**
+
+Batch processing allows a recruiter to upload **multiple resumes at once (up to 50)** and process them asynchronously.
+
+## ✔ 1. Batch Creation API
+
+`POST /api/v1/batch/create`
+
+- Generate `batchId` (`BATCH_YYYYMMDD_XXXX`)
+- Validate:
+  - MAX_RESUMES_PER_BATCH = 50
+  - MAX_TOTAL_BYTES_PER_BATCH = 200MB
+- Store batch in MongoDB
+- Publish per-resume jobs to Redis queue
+
+---
+
+## ✔ 2. Redis Queue (Node → Python)
+
+Node publishes jobs in RQ-compatible format:
+
+```json
+{
+  "batchId": "BATCH_20251209_0001",
+  "jobDescriptionId": "JOB_123",
+  "resumeId": "RESUME_20251209_0007",
+  "resumeUrl": "https://..."
+}
+```
+
+Each resume = 1 background job.
+
+---
+
+## ✔ 3. Python RQ Worker
+
+- Fetches job from Redis
+- Marks resume as **processing**
+- Simulates/executes parsing
+- Retries failures automatically
+- Sends callback to Node API when done
+
+Features:
+
+- Multi-worker support (4+ workers)
+- Exponential backoff
+- Retry scheduler
+
+---
+
+## ✔ 4. Callback Handler (Node)
+
+The Node server receives:
+
+```json
+{
+  "batchId": "...",
+  "resumeId": "...",
+  "status": "completed" | "failed"
+}
+```
+
+### 🔒 Uses **atomic MongoDB updates**
+
+This prevents concurrency issues like **lost updates**, especially when 20+ workers push callbacks simultaneously.
+
+```ts
+await Batch.updateOne(
+  { batchId, 'resumes.resumeId': resumeId },
+  {
+    $set: { 'resumes.$.status': status },
+    $inc: {
+      processedResumes: 1,
+      completedResumes: status === 'completed' ? 1 : 0,
+      failedResumes: status === 'failed' ? 1 : 0,
+    },
+  },
+);
+```
+
+Guaranteed correctness even under high concurrency.
+
+---
+
+## ✔ 5. Batch Status API
+
+`GET /api/v1/batch/:batchId`
+
+Returns live status:
+
+```json
+{
+  "batchId": "...",
+  "status": "processing",
+  "processedResumes": 13,
+  "completedResumes": 13,
+  "failedResumes": 0,
+  "totalResumes": 25,
+  "resumes": [ ... ]
+}
+```
+
+---
+
+# 📚 **API Documentation (Overview)**
+
+### **Auth**
+
+| Method | Endpoint            | Description                 |
+| ------ | ------------------- | --------------------------- |
+| POST   | /auth/signup        | Create user & send OTP      |
+| POST   | /auth/verify-otp    | Verify OTP for signup/reset |
+| POST   | /auth/signin        | Login (JWT)                 |
+| POST   | /auth/refresh-token | Refresh access token        |
+
+---
+
+### **Resume Mgmt**
+
+| Method | Endpoint             | Description          |
+| ------ | -------------------- | -------------------- |
+| POST   | /resume/save-meta    | Save resume metadata |
+| POST   | /resume/parse-resume | Parse resume via AI  |
+
+---
+
+### **Job Description**
+
+| Method | Endpoint | Description            |
+| ------ | -------- | ---------------------- |
+| POST   | /job     | Create job description |
+| GET    | /job     | List all jobs          |
+| PATCH  | /job/:id | Update                 |
+| DELETE | /job/:id | Delete                 |
+
+---
+
+### **Batch Processing (Stage 4)**
+
+| Method | Endpoint        | Description                     |
+| ------ | --------------- | ------------------------------- |
+| POST   | /batch/create   | Create batch & enqueue jobs     |
+| GET    | /batch/:batchId | Get batch status                |
+| POST   | /batch/update   | Worker → Node callback endpoint |
+
+---
+
+# ⚙️ **Environment Variables**
+
+```env
+PORT=5000
+MONGODB_URI=
+JWT_ACCESS_SECRET=
+JWT_REFRESH_SECRET=
+SMTP_HOST=
+SMTP_PORT=
+SMTP_SECURE=
+SMTP_USER=
+SMTP_PASS=
+EMAIL_FROM=
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# Redis
+REDIS_URL=redis://127.0.0.1:6379
+
+# Resume Parsing Service
+PARSER_SERVICE_URL=http://localhost:9000/parse
+```
+
+---
+
+# 🧪 **Testing (E2E Tested 2025)**
+
+A full end-to-end test verifies:
+
+- Node publishes 25+ jobs
+- Redis receives all jobs
+- Python multi-workers process them concurrently
+- Retry logic handles failures
+- Node callback handler updates Mongo atomically
+- Batch reaches `status=completed`
+
+---
+
+# 📈 **Performance**
+
+- Processes **50 resumes per batch**
+- Supports **4–8 workers**
+- Zero lost updates
+- Queue operations: O(1)
+- Mongo concurrency: 100% safe (atomic updates)
+
+---
+
+# 🔮 **Next Steps (Stage 5+)**
+
+- Vector embeddings for resume-job matching
+- Global ranking algorithm
+- Recruiter dashboards + analytics
+- Websocket live updates
+- Resume scoring model improvements
+- Batch-level summary insights
+
+---
+
+# 🤝 **Contributing**
+
+Contributions are welcome!
+Follow TypeScript coding conventions and maintain architectural consistency.
+
+---
+
+# **Developed By**
+
+_Shekh Aalim_

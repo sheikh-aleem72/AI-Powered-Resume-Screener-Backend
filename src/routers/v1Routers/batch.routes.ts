@@ -9,9 +9,9 @@ import {
 const router = express.Router();
 
 // For postman testing
-router.post('/create', authMiddleware, createBatchController);
+router.post('/create', createBatchController);
 
-router.get('/', getBatchByIdController);
+router.get('/:batchId', getBatchByIdController);
 
 router.post('/update', updateBatchController);
 

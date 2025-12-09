@@ -38,7 +38,11 @@ export const createBatchController = async (req: AuthRequest, res: Response) => 
 
 export const getBatchByIdController = async (req: AuthRequest, res: Response) => {
   try {
-    const response = await getBatchByIdService(req.body.batchId);
+    if (!req.params.batchId) {
+      throw new AppError('BatchId is required!', 404);
+    }
+
+    const response = await getBatchByIdService(req.params.batchId);
     return res.status(200).json({
       success: true,
       data: response,

@@ -1,7 +1,7 @@
 import { publishBatchJob } from '../queues/pubSubPublisher';
 import { publishRQBatchJob } from '../queues/rqPublisher';
 import { createBatch, getBatchById, updateBatchStatus } from '../repositories/batch.repository';
-import { IBatch } from '../schema/batch.model';
+import { BatchModel, IBatch } from '../schema/batch.model';
 import { AppError } from '../utils/AppErrors';
 import { generateBatchId } from '../utils/generateBatchIds';
 import { generateResumeId } from '../utils/generateResumesId';
@@ -79,54 +79,41 @@ export const updateBatchService = async (
   resumeId: string,
   data: Partial<IBatch>,
 ) => {
-  // console.log('Batch id & status', batchId, data.status);
+  const status = data.status === 'completed' ? 'completed' : 'failed';
 
-  if (!batchId || !resumeId) {
-    throw new AppError('batchId and resumeId are required!', 400);
-  }
+  const update = await BatchModel.updateOne(
+    {
+      batchId,
+      'resumes.resumeId': resumeId,
+    },
+    {
+      $set: { 'resumes.$.status': status },
+      $inc: {
+        processedResumes: 1,
+        ...(status === 'completed' ? { completedResumes: 1 } : { failedResumes: 1 }),
+      },
+    },
+  );
 
-  const batch = await getBatchByIdService(batchId);
-
-  // console.log('Checkpoint');
-  // Update resume entry inside the batch document
-  const resumeEntry = batch.resumes.find((r) => r.resumeId === resumeId);
-
-  if (!resumeEntry) {
+  if (update.matchedCount === 0) {
     throw new AppError('Resume not found in batch!', 404);
   }
 
-  resumeEntry.status = data.status === 'completed' ? 'completed' : 'failed';
+  // After updating counters, check if batch should be marked completed
+  const batch = await BatchModel.findOne({ batchId }).select(
+    'processedResumes totalResumes failedResumes',
+  );
 
-  // Increment batch counters
-  batch.processedResumes += 1;
-
-  if (data.status === 'completed') {
-    batch.completedResumes += 1;
-  } else {
-    batch.failedResumes += 1;
+  if (!batch) {
+    throw new AppError('Batch Not found!', 404);
   }
 
-  // If all resumes finished → mark batch completed or failed
   if (batch.processedResumes === batch.totalResumes) {
-    batch.status = batch.failedResumes > 0 ? 'failed' : 'completed';
-  } else {
-    batch.status = 'processing';
+    const finalStatus = batch.failedResumes > 0 ? 'failed' : 'completed';
+
+    await BatchModel.updateOne({ batchId }, { $set: { status: finalStatus } });
   }
 
-  // const updatedBatch = await updateBatchStatus(batchId, {
-  //   status: isFailed ? 'failed' : 'completed',
-  //   processedResumes: batch.totalResumes,
-  //   completedResumes: isFailed ? 0 : batch.totalResumes,
-  //   failedResumes: isFailed ? batch.totalResumes : 0,
-  // });
-
-  await batch.save();
-
-  // if (!updatedBatch) {
-  //   throw new AppError('Batch not found', 404);
-  // }
-
-  console.log(`✅ Batch ${batchId} marked as ${data.status}`);
-
-  return batch;
+  console.log(`✅ Atomic update successful for resume ${resumeId}`);
+  return true;
 };

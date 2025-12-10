@@ -34,14 +34,14 @@ export const createJob = async (req: AuthRequest, res: Response) => {
 
 export const getJob = async (req: AuthRequest, res: Response) => {
   try {
-    const jobId = req.params.id;
-    if (!jobId) {
+    const jobDescriptionId = req.params.id;
+    if (!jobDescriptionId) {
       return res.status(400).json({
         success: false,
         message: 'Job id is required',
       });
     }
-    const job = await service.getJobService(jobId);
+    const job = await service.getJobService(jobDescriptionId);
     return res.status(200).json({ success: true, data: job });
   } catch (error) {
     if (error instanceof AppError) {
@@ -62,14 +62,14 @@ export const getJob = async (req: AuthRequest, res: Response) => {
 
 export const updateJob = async (req: AuthRequest, res: Response) => {
   try {
-    const jobId = req.params.id;
-    if (!jobId) {
+    const jobDescriptionId = req.params.id;
+    if (!jobDescriptionId) {
       return res.status(400).json({
         success: false,
         message: 'Job id is required',
       });
     }
-    const job = await service.updateJobService(jobId, req.body);
+    const job = await service.updateJobService(jobDescriptionId, req.body);
     return res.status(200).json({ success: true, data: job });
   } catch (error) {
     if (error instanceof AppError) {
@@ -90,14 +90,14 @@ export const updateJob = async (req: AuthRequest, res: Response) => {
 
 export const deleteJob = async (req: AuthRequest, res: Response) => {
   try {
-    const jobId = req.params.id;
-    if (!jobId) {
+    const jobDescriptionId = req.params.id;
+    if (!jobDescriptionId) {
       return res.status(400).json({
         success: false,
         message: 'Job id is required',
       });
     }
-    await service.deleteJobService(jobId);
+    await service.deleteJobService(jobDescriptionId);
     return res.status(204).json({
       success: true,
       message: 'Job deleted successfully',

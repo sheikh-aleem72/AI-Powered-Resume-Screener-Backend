@@ -4,8 +4,8 @@ export const createResumeAnalysis = async (data: Partial<IResumeAnalysis>) => {
   return await ResumeAnalysisModel.create(data);
 };
 
-export const findAnalysisByResumeAndJob = async (resumeId: string, jobId: string) => {
-  return await ResumeAnalysisModel.findOne({ resumeId, jobId });
+export const findAnalysisByResumeAndJob = async (resumeId: string, jobDescriptionId: string) => {
+  return await ResumeAnalysisModel.findOne({ resumeId, jobDescriptionId });
 };
 
 export const findAnalysisById = async (id: string) => {
@@ -17,7 +17,7 @@ export const updateResumeAnalysis = async (id: string, updateData: Partial<IResu
 };
 
 export const getAllAnalyses = async () => {
-  return await ResumeAnalysisModel.find().populate('resumeId jobId');
+  return await ResumeAnalysisModel.find().populate('resumeId jobDescriptionId');
 };
 
 export const deleteAnalysis = async (id: string) => {

@@ -46,13 +46,15 @@ export const signupService = async (
   }
 
   // For signup, hash the password so we don't store plaintext in pending
-  const hashedPassword = password ? await bcryptHash(password, 10) : null;
+  // const hashedPassword = password ? await bcryptHash(password, 10) : null;
+
+  // console.log('Checkpoint1 -> Hashed Password for pending document: ', hashedPassword);
 
   // Create pending verification for user
   await createPending({
     email,
     name: name || null,
-    hashedPassword,
+    password,
     organization: organization || null,
     purpose: 'signup',
     otpHash,
@@ -67,11 +69,15 @@ export const signupService = async (
 
 export const signinService = async (email: string, password: string): Promise<AuthResponse> => {
   // 1️⃣ Find user by email
+  // console.log('Checkpoint 1 -> email: ', email);
   const user = await findUserByEmail(email);
+  // console.log('Checkpoint 2 -> user: ', user);
+
   if (!user) throw new AppError('Invalid email or password', 401);
 
   // 2️⃣ Compare password
   const isMatch = await user.comparePassword(password);
+  // console.log('checkpoint 3 -> isMatch', isMatch);
   if (!isMatch) throw new AppError('Invalid email or password', 401);
 
   // 3️⃣ Generate tokens
@@ -205,11 +211,12 @@ export const verifyOtpService = async ({
     throw new AppError('OTP expired. Please request a new one.', 401);
   }
 
+  // console.log('Checkpoint2 -> Found pending!', pending.hashedPassword);
   const isValid = await verifyOtpHash(otp, pending.otpHash);
   if (!isValid) throw new AppError('Invalid OTP', 400);
 
   if (purpose === 'signup') {
-    if (!pending.name || !pending.hashedPassword) {
+    if (!pending.name || !pending.password) {
       await deletePendingByEmailAndPurpose(email, 'signup');
       throw new AppError('Incomplete signup data. Please request signup again.', 400);
     }
@@ -217,11 +224,13 @@ export const verifyOtpService = async ({
     const newUser = await createUser({
       name: pending.name,
       email: pending.email,
-      password: pending.hashedPassword,
+      password: pending.password,
       organization: pending.organization,
       premium: false,
       role: 'recruiter',
     } as IUser);
+
+    console.log('Checkpoint3 -> Password after user created: ', newUser.password);
 
     await deletePendingByEmailAndPurpose(email, 'signup');
 

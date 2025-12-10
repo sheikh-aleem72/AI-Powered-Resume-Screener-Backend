@@ -10,13 +10,13 @@ import { IResumeAnalysis } from '../schema/resumeAnalysis.model';
 import { AppError } from '../utils/AppErrors';
 
 export const createAnalysisService = async (data: Partial<IResumeAnalysis>) => {
-  if (!data.resumeId || !data.jobId) {
-    throw new AppError('Missing resumeId or jobId', 400);
+  if (!data.resumeId || !data.jobDescriptionId) {
+    throw new AppError('Missing resumeId or jobDescriptionId', 400);
   }
 
   const existing = await findAnalysisByResumeAndJob(
     data.resumeId.toString(),
-    data.jobId.toString(),
+    data.jobDescriptionId.toString(),
   );
   if (existing) throw new AppError('Analysis already exists for this resume-job pair', 409);
 
@@ -29,8 +29,11 @@ export const getAnalysisByIdService = async (id: string) => {
   return analysis;
 };
 
-export const findAnalysisByResumeIdAndJobIdService = async (resumeId: string, jobId: string) => {
-  return await findAnalysisByResumeAndJob(resumeId, jobId);
+export const findAnalysisByResumeIdAndJobIdService = async (
+  resumeId: string,
+  jobDescriptionId: string,
+) => {
+  return await findAnalysisByResumeAndJob(resumeId, jobDescriptionId);
 };
 
 export const updateAnalysisService = async (id: string, data: Partial<IResumeAnalysis>) => {

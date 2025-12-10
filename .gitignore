@@ -38,3 +38,4 @@ coverage/
 *.swp
 
 /src/scripts
+/src/uploads

@@ -1,22 +1,33 @@
-import { publishBatchJob } from '../queues/pubSubPublisher';
 import { publishRQBatchJob } from '../queues/rqPublisher';
-import { createBatch, getBatchById, updateBatchStatus } from '../repositories/batch.repository';
+import { createBatch, getBatchById } from '../repositories/batch.repository';
 import { BatchModel, IBatch } from '../schema/batch.model';
 import { AppError } from '../utils/AppErrors';
 import { generateBatchId } from '../utils/generateBatchIds';
 import { generateResumeId } from '../utils/generateResumesId';
 import { env } from '../config/serverConfig';
+import { ResumeProcessing } from '../schema/resumeProcessings.model.';
 
-export const createBatchService = async (data: Partial<IBatch>) => {
-  if (!data.jobDescriptionId || !data.resumes) {
-    throw new AppError(`jobDescriptionId and resumes are required`, 400);
+export type ResumeInput = {
+  resumeObjectId: string;
+  resumeUrl: string;
+};
+
+export const createBatchService = async (data: {
+  jobDescriptionId: string;
+  resumes: ResumeInput[];
+  size: number;
+}) => {
+  const { jobDescriptionId, resumes, size } = data;
+
+  console.log('Resumes: ', resumes);
+  if (!jobDescriptionId || !resumes || resumes.length === 0) {
+    throw new AppError('jobDescriptionId and resumes are required', 400);
   }
-
   // Validate count of files and size
   // ------------------------------------------------------
   // 1. VALIDATE MAX RESUMES
   // ------------------------------------------------------
-  if (data.resumes.length > env.MAX_RESUMES_PER_BATCH) {
+  if (resumes.length > env.MAX_RESUMES_PER_BATCH) {
     throw new AppError(
       `A batch cannot contain more than ${env.MAX_RESUMES_PER_BATCH} resumes`,
       400,
@@ -26,9 +37,9 @@ export const createBatchService = async (data: Partial<IBatch>) => {
   // ------------------------------------------------------
   // 2. VALIDATE TOTAL BYTES
   // ------------------------------------------------------
-  const totalBytes = data.resumes.reduce((sum, r) => sum + (data.size ?? 0), 0);
+  // const totalBytes = resumes.reduce((sum, r) => sum + (size ?? 0), 0);
 
-  if (totalBytes > env.MAX_TOTAL_BYTES_PER_BATCH) {
+  if (size > env.MAX_TOTAL_BYTES_PER_BATCH) {
     throw new AppError(
       `Total batch size exceeds ${env.MAX_TOTAL_BYTES_PER_BATCH / (1024 * 1024)} MB`,
       400,
@@ -37,23 +48,48 @@ export const createBatchService = async (data: Partial<IBatch>) => {
 
   // Generate BatchId
   const batchId = await generateBatchId();
-  const resumes = [];
+  const resumesArray = resumes;
 
-  for (const resume of data.resumes) {
-    const resumeId = await generateResumeId();
-    resumes.push({ resumeId, resumeUrl: resume.resumeUrl, status: 'queued' });
-  }
+  // 3. Create ResumeProcessing records
+  const resumeProcessing = await ResumeProcessing.insertMany(
+    await Promise.all(
+      resumesArray.map(async (resume) => ({
+        externalResumeId: await generateResumeId(),
+        resumeObjectId: resume.resumeObjectId,
+        jobDescriptionId: jobDescriptionId,
+        resumeUrl: resume.resumeUrl,
+        batchId,
+        status: 'queued',
+      })),
+    ),
+  );
 
-  data.batchId = batchId;
-  data.totalResumes = data.resumes.length;
-  data.resumes = resumes;
+  // 4. Build batch.resumes references
+  const batchResumes = resumeProcessing.map((rp, index) => ({
+    resumeObjectId: rp.resumeObjectId,
+    resumeUrl: rp.resumeUrl,
+    resumeProcessingId: rp._id.toString(),
+    externalResumeId: rp.externalResumeId,
+  }));
 
-  const batch = await createBatch(data);
+  // 5. Create batch
+  const batch = await createBatch({
+    batchId,
+    jobDescriptionId: jobDescriptionId,
+    resumes: batchResumes,
+    totalResumes: batchResumes.length,
+    size: size,
+  });
 
+  // 6. Publish jobs (IMPORTANT CHANGE)
   await publishRQBatchJob({
-    batchId: batch.batchId,
-    jobDescriptionId: batch.jobDescriptionId,
-    resumes: batch.resumes,
+    batchId,
+    jobDescriptionId: jobDescriptionId,
+    resumes: resumeProcessing.map((rp, i) => ({
+      resumeProcessingId: rp._id.toString(), //  resumeProcessingId
+      resumeUrl: rp.resumeUrl,
+      externalResumeId: rp.externalResumeId,
+    })),
   });
 
   console.log('Batch published!');

@@ -7,6 +7,7 @@ import jobRouter from './job.routes';
 import resumeAnalysisRouter from './analysis.routes';
 import analyzeResumeRouter from './analyzeResume.routes';
 import batchRouter from './batch.routes';
+import resumeProcessingsRouter from './resumeProcessings.routes';
 
 const router = express.Router();
 
@@ -33,5 +34,8 @@ router.use('/analyze-resume', analyzeResumeRouter);
 
 // Handler routes related to batch
 router.use('/batch', batchRouter);
+
+// Handle routes related to resumeProcessings
+router.use('/processing', resumeProcessingsRouter);
 
 export default router;

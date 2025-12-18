@@ -1,9 +1,14 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IBatch extends Document {
   batchId: string; // assigned by us
   jobDescriptionId: string; // refers to job description
-  resumes: { resumeId: string; resumeUrl: string; status: string }[];
+  resumes: {
+    externalResumeId?: string;
+    resumeUrl: string;
+    resumeProcessingId?: string;
+    resumeObjectId: string;
+  }[];
   status: 'queued' | 'processing' | 'completed' | 'failed';
   totalResumes: number;
   processedResumes: number;
@@ -20,12 +25,22 @@ const batchSchema = new Schema<IBatch>(
     jobDescriptionId: { type: String, required: true },
     resumes: [
       {
-        resumeId: String,
-        resumeUrl: String,
-        status: {
+        externalResumeId: {
           type: String,
-          enum: ['queued', 'processing', 'completed', 'failed'],
-          default: 'queued',
+          required: true,
+        },
+        resumeUrl: {
+          type: String,
+          required: true,
+        },
+        resumeProcessingId: {
+          type: Types.ObjectId,
+          ref: 'ResumeProcessing',
+          required: true,
+        },
+        resumeObjectId: {
+          type: Types.ObjectId,
+          ref: 'Resume',
         },
       },
     ],

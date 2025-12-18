@@ -5,8 +5,9 @@ import { env } from '../config/serverConfig';
 export type ResumeInput =
   | string
   | {
-      resumeId: string;
+      resumeProcessingId: string;
       resumeUrl?: string;
+      externalResumeId: string;
     };
 
 export type PublishedTask = {
@@ -29,9 +30,9 @@ export async function publishRQBatchJob(data: {
   const published: PublishedTask[] = [];
 
   for (const r of data.resumes) {
-    const resumeId = typeof r === 'string' ? r : r.resumeId;
+    const resumeProcessingId = typeof r === 'string' ? r : r.resumeProcessingId;
     const resumeUrl = typeof r === 'string' ? null : (r.resumeUrl ?? null);
-
+    const externalResumeId = typeof r === 'string' ? null : r.externalResumeId;
     // 1. Generate queueTaskId (RQ job ID)
     const queueTaskId = uuidv4();
 
@@ -40,14 +41,15 @@ export async function publishRQBatchJob(data: {
     const payload = JSON.stringify({
       batchId: data.batchId,
       jobDescriptionId: data.jobDescriptionId,
-      resumeId,
+      resumeProcessingId,
       resumeUrl,
+      externalResumeId,
     });
 
     // 3. Store job in RQ format (Redis HASH)
 
     // Add description so RQ logging does not crash
-    const description = `Process resume ${resumeId} for batch ${data.batchId}`;
+    const description = `Process resume ${externalResumeId} for batch ${data.batchId}`;
     await redis.hmset(`rq:job:${queueTaskId}`, {
       data: payload, // Our JSON payload
       status: 'queued',
@@ -58,7 +60,7 @@ export async function publishRQBatchJob(data: {
     // 4. Push job onto RQ queue LIST
     await redis.lpush(`rq:queue:${RQ_QUEUE}`, queueTaskId);
 
-    console.log(`📤 Job published for resume: ${resumeId}`);
+    console.log(`📤 Job published for resume: ${externalResumeId}`);
   }
   return published;
 }

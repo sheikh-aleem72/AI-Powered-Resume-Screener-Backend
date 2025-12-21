@@ -50,9 +50,8 @@ export const createResumeProcessingController = async (req: AuthRequest, res: Re
 
 export const getResumeProcessingController = async (req: AuthRequest, res: Response) => {
   try {
-    const { resumeProcessingId } = req.params;
-
-    const response = await getResumeProcessingsService(resumeProcessingId!);
+    const { batchId } = req.params;
+    const response = await getResumeProcessingsService(batchId!);
 
     return res.status(200).json({
       success: true,

@@ -1,14 +1,7 @@
 import { Schema, model, Types } from 'mongoose';
 import { string } from 'zod';
 
-export type ResumeProcessingStatus =
-  | 'queued'
-  | 'processing'
-  | 'textExtracted'
-  | 'normalized'
-  | 'dedupChecked'
-  | 'completed'
-  | 'failed';
+export type ResumeProcessingStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
 const ResumeProcessingSchema = new Schema(
   {
@@ -76,6 +69,69 @@ const ResumeProcessingSchema = new Schema(
       default: false,
       index: true,
     },
+
+    // ---- Embeddings ---------------
+    resumeEmbedding: {
+      type: [Number], // number[]
+      required: false,
+      default: undefined,
+    },
+
+    jobEmbedding: {
+      type: [Number], // number[]
+      required: false,
+      default: undefined,
+    },
+
+    embeddingStatus: {
+      type: String,
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending',
+    },
+
+    embeddingModel: {
+      type: String,
+      required: false,
+    },
+
+    // ---- Phase 4.3: Pre-filter result ----
+    preFilter: {
+      passed: {
+        type: Boolean,
+        default: null,
+        index: true,
+      },
+
+      similarityScore: {
+        type: Number,
+        required: false,
+      },
+
+      reasons: {
+        type: [String],
+        default: [],
+      },
+    },
+
+    // ----  Ranking ----
+    finalScore: {
+      type: Number,
+      required: false,
+      index: true,
+    },
+
+    rank: {
+      type: Number,
+      required: false,
+      index: true,
+    },
+
+    rankingStatus: {
+      type: String,
+      enum: ['pending', 'completed'],
+      default: 'pending',
+    },
+
     // ---- Results (filled later) ----
     parsedResume: {
       type: Schema.Types.Mixed,

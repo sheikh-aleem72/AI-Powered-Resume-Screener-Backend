@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.post('/create', authMiddleware, createResumeProcessingController);
 
-router.get('/:resumeProcessingId', authMiddleware, getResumeProcessingController);
+router.get('/:batchId', getResumeProcessingController);
 
 router.post('/update', authMiddleware, updateResumeProcessingController);
 

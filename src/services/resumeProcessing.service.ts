@@ -33,18 +33,18 @@ export const createResumeProcessingService = async (
   return newResumeProcessing;
 };
 
-export const getResumeProcessingsService = async (resumeProcessingsId: string) => {
-  if (resumeProcessingsId === null) {
-    throw new AppError('resumeProcessingsId is required', 400);
+export const getResumeProcessingsService = async (batchId: string) => {
+  if (batchId === null) {
+    throw new AppError('batchId is required', 400);
   }
 
-  const resumeProcessing = await ResumeProcessing.findById(resumeProcessingsId);
+  const resumeProcessings = await ResumeProcessing.find({ batchId });
 
-  if (resumeProcessing === null) {
+  if (resumeProcessings === null) {
     throw new AppError('resumeProcessings not found', 404);
   }
 
-  return resumeProcessing;
+  return resumeProcessings;
 };
 
 export const updateResumeProcessingsService = async (

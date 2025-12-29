@@ -172,7 +172,6 @@ export const getAnalysisStatusController = async (req: AuthRequest, res: Respons
   try {
     const { resumeProcessingId } = req.params;
 
-    console.log('Status request reached!');
     if (!resumeProcessingId) {
       return res.status(400).json({
         success: false,
@@ -181,7 +180,6 @@ export const getAnalysisStatusController = async (req: AuthRequest, res: Respons
     }
 
     const result = await getAnalysisStatusService(resumeProcessingId);
-    console.log('Status request returned!');
 
     if (!result) {
       return res.status(404).json({ success: false, message: 'ResumeProcessing not found' });

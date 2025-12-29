@@ -10,7 +10,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,json,md}\"",
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "build": "tsc",
-    "start": "npm run lint:fix && npm run build && node dist/index.js"
+    "start": "npm run lint:fix && npm run build && node dist/index.js",
+    "test": "npx ts-node src/scripts/e2e-test-phase4.ts"
   },
   "keywords": [],
   "author": "",

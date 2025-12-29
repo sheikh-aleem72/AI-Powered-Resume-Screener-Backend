@@ -70,6 +70,11 @@ const ResumeProcessingSchema = new Schema(
       index: true,
     },
 
+    normalizedResumeText: {
+      type: String,
+      default: null,
+    },
+
     // ---- Embeddings ---------------
     resumeEmbedding: {
       type: [Number], // number[]
@@ -199,14 +204,34 @@ const ResumeProcessingSchema = new Schema(
       },
     },
     // ---- Results (filled later) ----
-    parsedResume: {
-      type: Schema.Types.Mixed,
-      default: null,
+    analysisStatus: {
+      type: String,
+      enum: ['not_requested', 'queued', 'processing', 'completed', 'failed'],
+      default: 'not_requested',
+      index: true,
     },
 
     analysis: {
       type: Schema.Types.Mixed,
       default: null,
+    },
+
+    analysisError: {
+      type: String,
+      default: null,
+    },
+
+    analysisRequestedAt: {
+      type: Date,
+    },
+
+    analysisCompletedAt: {
+      type: Date,
+    },
+
+    analysisRetryCount: {
+      type: Number,
+      default: 0,
     },
 
     error: {

@@ -1,6 +1,8 @@
+import { publishAnalysisJob } from '../queues/analysisQueue';
 import { BatchModel } from '../schema/batch.model';
 import { ResumeProcessing } from '../schema/resumeProcessings.model.';
 import { AppError } from '../utils/AppErrors';
+import { Types } from 'mongoose';
 
 interface ResumeProcessingCallbackPayload {
   resumeProcessingId: string;
@@ -8,6 +10,64 @@ interface ResumeProcessingCallbackPayload {
   status: 'completed' | 'failed' | 'processing';
   externalResumeId: string;
 }
+
+interface AnalyzeResumeInput {
+  resumeProcessingId: string;
+  force: boolean;
+}
+
+export const analyzeResumeService = async ({ resumeProcessingId, force }: AnalyzeResumeInput) => {
+  if (!Types.ObjectId.isValid(resumeProcessingId)) {
+    throw new Error('Invalid resumeProcessingId');
+  }
+
+  const rp = await ResumeProcessing.findById(resumeProcessingId);
+
+  if (!rp) {
+    throw new Error('ResumeProcessing not found');
+  }
+
+  // 1. Cached result
+  if (rp.analysisStatus === 'completed' && !force) {
+    return {
+      status: 'completed',
+      analysis: rp.analysis,
+    };
+  }
+
+  // 2. Already running
+  if (rp.analysisStatus === 'queued' || rp.analysisStatus === 'processing') {
+    return {
+      status: 'processing',
+      message: 'Analysis already in progress',
+    };
+  }
+
+  // 3. Failed but not forced
+  if (rp.analysisStatus === 'failed' && !force) {
+    return {
+      status: 'failed',
+      message: 'Previous analysis failed',
+      retryable: true,
+    };
+  }
+
+  // 4. Trigger fresh analysis
+  rp.analysisStatus = 'queued';
+  rp.analysisRequestedAt = new Date();
+
+  await rp.save();
+
+  // enqueue job
+  await publishAnalysisJob({
+    resumeProcessingId: rp._id.toString(),
+  });
+
+  return {
+    status: 'queued',
+    message: 'Analysis has been queued',
+  };
+};
 
 export const createResumeProcessingService = async (
   resumeObjectId: string,
@@ -46,6 +106,37 @@ export const getResumeProcessingsService = async (batchId: string) => {
 
   return resumeProcessings;
 };
+
+export async function getAnalysisStatusService(resumeProcessingId: string) {
+  const rp = await ResumeProcessing.findById(resumeProcessingId)
+    .select('analysisStatus analysis analysisError analysisCompletedAt')
+    .lean();
+
+  if (!rp) return null;
+
+  switch (rp.analysisStatus) {
+    case 'not_requested':
+    case 'queued':
+    case 'processing':
+      return { status: rp.analysisStatus };
+
+    case 'completed':
+      return {
+        status: 'completed',
+        analysis: rp.analysis,
+        completedAt: rp.analysisCompletedAt,
+      };
+
+    case 'failed':
+      return {
+        status: 'failed',
+        error: rp.analysisError ?? 'Analysis failed',
+      };
+
+    default:
+      return { status: 'unknown' };
+  }
+}
 
 export const updateResumeProcessingsService = async (
   resumeProcessingId: string,

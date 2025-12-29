@@ -1,7 +1,9 @@
 import { Request as ExRequest, Response } from 'express';
 import { AppError } from '../utils/AppErrors';
 import {
+  analyzeResumeService,
   createResumeProcessingService,
+  getAnalysisStatusService,
   getResumeProcessingsService,
   resumeProcessingCallbackService,
   updateResumeProcessingsService,
@@ -124,6 +126,82 @@ export const resumeProcessingCallbackController = async (req: AuthRequest, res: 
 
     // ❌ Handle unexpected errors
     console.error('Error in resumeProcessingCallbackController:');
+    return res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong on our side',
+    });
+  }
+};
+
+export const analyzeResumeController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { force = false } = req.body;
+    const { resumeProcessingId } = req.params;
+
+    if (!resumeProcessingId) {
+      throw new AppError('Invalid resumeProcessingId', 400);
+    }
+    const result = await analyzeResumeService({
+      resumeProcessingId,
+      force,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    // ✅ Handle operational (AppError) errors gracefully
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        status: 'error',
+        message: error.message,
+      });
+    }
+
+    // ❌ Handle unexpected errors
+    console.error('Error in analyze resume controller:');
+    return res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong on our side',
+    });
+  }
+};
+
+export const getAnalysisStatusController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { resumeProcessingId } = req.params;
+
+    console.log('Status request reached!');
+    if (!resumeProcessingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'resumeProcessingID is required!',
+      });
+    }
+
+    const result = await getAnalysisStatusService(resumeProcessingId);
+    console.log('Status request returned!');
+
+    if (!result) {
+      return res.status(404).json({ success: false, message: 'ResumeProcessing not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    // ✅ Handle operational (AppError) errors gracefully
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        status: 'error',
+        message: error.message,
+      });
+    }
+
+    // ❌ Handle unexpected errors
+    console.error('Error in get analysis status controller:');
     return res.status(500).json({
       status: 'error',
       message: 'Something went wrong on our side',

@@ -70,6 +70,11 @@ const ResumeProcessingSchema = new Schema(
       index: true,
     },
 
+    normalizedResumeText: {
+      type: String,
+      default: null,
+    },
+
     // ---- Embeddings ---------------
     resumeEmbedding: {
       type: [Number], // number[]
@@ -128,19 +133,105 @@ const ResumeProcessingSchema = new Schema(
 
     rankingStatus: {
       type: String,
-      enum: ['pending', 'completed'],
+      enum: ['pending', 'completed', 'skipped'],
       default: 'pending',
     },
 
+    // ---- Phase 5A: Explanation (derived, human-facing) ----
+    explanation: {
+      decision: {
+        status: {
+          type: String,
+          enum: ['passed', 'rejected'],
+        },
+        reasons: {
+          type: [String],
+          default: [],
+        },
+      },
+
+      skills: {
+        required: {
+          type: [String],
+          default: [],
+        },
+        matched: {
+          type: [String],
+          default: [],
+        },
+        missing: {
+          type: [String],
+          default: [],
+        },
+        optionalMatched: {
+          type: [String],
+          default: [],
+        },
+      },
+
+      experience: {
+        requiredYears: Number,
+        candidateYears: Number,
+        meetsRequirement: Boolean,
+      },
+
+      // reserved for future (do NOT populate yet)
+      education: {
+        requiredLevel: String,
+        candidateLevel: String,
+        meetsRequirement: Boolean,
+      },
+
+      scoreBreakdown: {
+        components: {
+          similarity: {
+            score: Number,
+            weight: Number,
+          },
+          requiredSkills: {
+            ratio: Number,
+            weight: Number,
+          },
+          preferredSkills: {
+            ratio: Number,
+            weight: Number,
+          },
+          experience: {
+            ratio: Number,
+            weight: Number,
+          },
+        },
+      },
+    },
     // ---- Results (filled later) ----
-    parsedResume: {
-      type: Schema.Types.Mixed,
-      default: null,
+    analysisStatus: {
+      type: String,
+      enum: ['not_requested', 'queued', 'processing', 'completed', 'failed'],
+      default: 'not_requested',
+      index: true,
     },
 
     analysis: {
       type: Schema.Types.Mixed,
       default: null,
+    },
+
+    analysisError: {
+      type: String,
+      default: null,
+    },
+
+    analysisRequestedAt: {
+      type: Date,
+    },
+
+    analysisCompletedAt: {
+      type: Date,
+    },
+
+    analysisRetryCount: {
+      type: Number,
+      default: 0,
     },
 
     error: {

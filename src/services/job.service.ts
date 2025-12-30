@@ -1,4 +1,4 @@
-import { IJob } from '../schema/job.model';
+import { IJob, JobModel } from '../schema/job.model';
 import {
   createJob,
   deleteJobById,
@@ -7,6 +7,16 @@ import {
   updateJobById,
 } from '../repositories/job.repository';
 import { AppError } from '../utils/AppErrors';
+import { ResumeProcessing } from '../schema/resumeProcessings.model.';
+
+interface GetJobResumesParams {
+  jobId: string;
+  recruiterId: string;
+  page: number;
+  limit: number;
+  status?: string | undefined;
+  passFail?: string | undefined;
+}
 
 export const createJobService = async (payload: Partial<IJob>) => {
   // Basic business validation can go here (e.g., ensure required_skills not empty)
@@ -43,4 +53,61 @@ export const deleteJobService = async (id: string) => {
 
 export const getJobsByRecruiterService = async (recruiterId: string) => {
   return getJobsByRecruiter(recruiterId);
+};
+
+export const getJobResumes = async ({
+  jobId,
+  recruiterId,
+  page,
+  limit,
+  status,
+  passFail,
+}: GetJobResumesParams) => {
+  // 1. Ownership guard
+  const job = await JobModel.findOne({ _id: jobId }).select('_id');
+  if (!job) {
+    throw new AppError('Job not found', 404);
+  }
+
+  // 2. Build filters
+  const filter: any = {
+    jobDescriptionId: jobId,
+  };
+
+  if (status) {
+    filter.status = status;
+  }
+
+  if (passFail) {
+    filter.passFail = passFail; // assumes stored by worker
+  }
+
+  // 3. Query resumes
+  const [resumes, total] = await Promise.all([
+    ResumeProcessing.find(filter)
+      .sort({ rank: 1 }) // CANONICAL ORDER
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select({
+        resumeObjectId: 1,
+        externalResumeId: 1,
+        rank: 1,
+        finalScore: 1,
+        status: 1,
+        passed: 1,
+        analysisStatus: 1,
+        explanation: 1,
+        createdAt: 1,
+      })
+      .lean(),
+
+    ResumeProcessing.countDocuments(filter),
+  ]);
+
+  return {
+    page,
+    limit,
+    total,
+    resumes,
+  };
 };

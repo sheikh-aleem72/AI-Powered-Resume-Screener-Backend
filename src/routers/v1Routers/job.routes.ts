@@ -14,6 +14,9 @@ router.get('/:id', authMiddleware, controller.getJobById);
 // Get jobs by recruiter
 router.get('/', authMiddleware, controller.getJobsByRecruiterController);
 
+// Get job resumes
+router.get('/:jobId/resumes', authMiddleware, controller.getJobResumesController);
+
 // Update job
 router.patch('/:id', authMiddleware, controller.updateJob);
 

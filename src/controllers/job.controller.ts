@@ -148,3 +148,44 @@ export const getJobsByRecruiterController = async (req: AuthRequest, res: Respon
     });
   }
 };
+
+export const getJobResumesController = async (req: AuthRequest, res: Response) => {
+  try {
+    const recruiterId = req.user!.id;
+    const { jobId } = req.params;
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const status = req.query.status as string | undefined;
+    const passFail = req.query.passFail as string | undefined;
+
+    if (!jobId || !page || !limit) {
+      throw new AppError('All fields are required!', 400);
+    }
+
+    const result = await service.getJobResumes({
+      jobId,
+      recruiterId,
+      page,
+      limit,
+      status,
+      passFail,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        status: error.statusCode,
+        message: error.message,
+      });
+    }
+
+    // ❌ Handle unexpected errors
+    console.error('Error in getJobResumesController:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong on our side',
+    });
+  }
+};

@@ -6,9 +6,34 @@ export const createJob = async (payload: Partial<IJob>) => {
   return job.save();
 };
 
-export const findJobById = async (id: string) => {
+export const findJobById = async (id: string, recruiterId: string) => {
   if (!Types.ObjectId.isValid(id)) return null;
-  return JobModel.findById(id).lean();
+  return JobModel.findOne({ _id: id, createdBy: recruiterId })
+    .select({
+      title: 1,
+      description: 1,
+      required_skills: 1,
+      experience_level: 1,
+      min_experience_years: 1,
+      totalResumes: 1,
+      completedResumes: 1,
+      createdAt: 1,
+      updatedAt: 1,
+    })
+    .lean();
+};
+
+export const getJobsByRecruiter = async (id: string) => {
+  return JobModel.find({ createdBy: id })
+    .select({
+      title: 1,
+      createdAt: 1,
+      totalResumes: 1,
+      completedResumes: 1,
+      updatedAt: 1,
+    })
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 export const updateJobById = async (id: string, update: Partial<IJob>) => {
@@ -19,16 +44,4 @@ export const updateJobById = async (id: string, update: Partial<IJob>) => {
 export const deleteJobById = async (id: string) => {
   if (!Types.ObjectId.isValid(id)) return null;
   return JobModel.findByIdAndDelete(id);
-};
-
-export const searchJobs = async (
-  query: { text?: string; skill?: string; experience?: number },
-  options = { limit: 20, skip: 0 },
-) => {
-  const q: any = {};
-  if (query.text) q.$text = { $search: query.text };
-  if (query.skill) q.required_skills = { $in: [query.skill] };
-  if (typeof query.experience === 'number') q.min_experience_years = { $lte: query.experience };
-
-  return JobModel.find(q).skip(options.skip).limit(options.limit).lean();
 };

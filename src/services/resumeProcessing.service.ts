@@ -1,5 +1,6 @@
 import { publishAnalysisJob } from '../queues/analysisQueue';
 import { BatchModel } from '../schema/batch.model';
+import { JobModel } from '../schema/job.model';
 import { ResumeProcessing } from '../schema/resumeProcessings.model.';
 import { AppError } from '../utils/AppErrors';
 import { Types } from 'mongoose';
@@ -199,17 +200,30 @@ export const resumeProcessingCallbackService = async (payload: ResumeProcessingC
   // 3. Update Batch atomically
   const batch = await BatchModel.findOneAndUpdate({ batchId }, update, { new: true });
 
+  // 4. Prepare atomic job update and update job
+  const jobUpdate: any = {
+    $inc: {},
+  };
+
+  if (status === 'completed') {
+    jobUpdate.$inc.completedResumes = 1;
+  } else if (status === 'failed') {
+    jobUpdate.$inc.failedResumes = 1;
+  }
+
+  await JobModel.updateOne({ _id: processing.jobDescriptionId }, jobUpdate);
+
   if (!batch) {
     throw new AppError('Batch not found', 404);
   }
 
-  // 4. Finalize batch if all done
+  // 5. Finalize batch if all done
   if (batch.completedResumes + batch.failedResumes >= batch.totalResumes) {
     batch.status = 'completed';
     await batch.save();
   }
 
-  // 5. Mark ResumeProcessing as accounted
+  // 6. Mark ResumeProcessing as accounted
   await ResumeProcessing.updateOne({ _id: resumeProcessingId }, { $set: { batchAccounted: true } });
 
   return {

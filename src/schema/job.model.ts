@@ -12,6 +12,9 @@ export interface IJob extends Document {
   createdBy?: Types.ObjectId; // recruiter id
   createdAt: Date;
   updatedAt: Date;
+  totalResumes: number;
+  completedResumes: number;
+  failedResumes: number;
 }
 
 const JobSchema = new Schema<IJob>(
@@ -25,6 +28,11 @@ const JobSchema = new Schema<IJob>(
     min_experience_years: { type: Number, default: 0 },
     description: { type: String, default: '' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+
+    // DENORMALIZED DASHBOARD FIELDS
+    totalResumes: { type: Number, default: 0 },
+    completedResumes: { type: Number, default: 0 },
+    failedResumes: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

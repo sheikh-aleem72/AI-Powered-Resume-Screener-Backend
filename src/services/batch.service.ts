@@ -6,6 +6,7 @@ import { generateBatchId } from '../utils/generateBatchIds';
 import { generateResumeId } from '../utils/generateResumesId';
 import { env } from '../config/serverConfig';
 import { ResumeProcessing } from '../schema/resumeProcessings.model.';
+import { JobModel } from '../schema/job.model';
 
 export type ResumeInput = {
   resumeObjectId: string;
@@ -81,7 +82,15 @@ export const createBatchService = async (data: {
     size: size,
   });
 
-  // 6. Publish jobs (IMPORTANT CHANGE)
+  // 6. Increment resumes length in job
+  await JobModel.updateOne(
+    { _id: jobDescriptionId },
+    {
+      $inc: { totalResumes: batchResumes.length },
+    },
+  );
+
+  // 7. Publish jobs (IMPORTANT CHANGE)
   await publishRQBatchJob({
     batchId,
     jobDescriptionId: jobDescriptionId,

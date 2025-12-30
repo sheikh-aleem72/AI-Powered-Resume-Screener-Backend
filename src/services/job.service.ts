@@ -3,7 +3,7 @@ import {
   createJob,
   deleteJobById,
   findJobById,
-  searchJobs,
+  getJobsByRecruiter,
   updateJobById,
 } from '../repositories/job.repository';
 import { AppError } from '../utils/AppErrors';
@@ -11,14 +11,20 @@ import { AppError } from '../utils/AppErrors';
 export const createJobService = async (payload: Partial<IJob>) => {
   // Basic business validation can go here (e.g., ensure required_skills not empty)
   if (!payload.title) throw new Error('Job title required');
+
   if (!payload.required_skills || payload.required_skills.length === 0) {
     throw new AppError('required_skills must include at least one skill', 400);
   }
+
+  if (!payload.createdBy) {
+    throw new AppError("Creator's id is required!", 400);
+  }
+
   return createJob(payload);
 };
 
-export const getJobService = async (id: string) => {
-  const job = await findJobById(id);
+export const getJobByIdService = async (id: string, recruiterId: string) => {
+  const job = await findJobById(id, recruiterId);
   if (!job) throw new AppError('Job not found', 404);
   return job;
 };
@@ -35,9 +41,6 @@ export const deleteJobService = async (id: string) => {
   return deleted;
 };
 
-export const listJobsService = async (
-  filters: { text?: string; skill?: string; experience?: number },
-  options = { limit: 20, skip: 0 },
-) => {
-  return searchJobs(filters, options);
+export const getJobsByRecruiterService = async (recruiterId: string) => {
+  return getJobsByRecruiter(recruiterId);
 };

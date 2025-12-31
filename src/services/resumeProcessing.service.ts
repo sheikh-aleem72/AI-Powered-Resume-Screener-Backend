@@ -94,18 +94,47 @@ export const createResumeProcessingService = async (
   return newResumeProcessing;
 };
 
-export const getResumeProcessingsService = async (batchId: string) => {
-  if (batchId === null) {
-    throw new AppError('batchId is required', 400);
+export const getResumeProcessingsByIdService = async (
+  resumeProcessingId: string,
+  recruiterId: string,
+) => {
+  // 1. Fetch resume processing record
+  const resume = await ResumeProcessing.findById(resumeProcessingId).lean();
+
+  if (!resume) {
+    return null;
   }
 
-  const resumeProcessings = await ResumeProcessing.find({ batchId });
+  // 2. Ownership check via Job
+  const job = await JobModel.findOne({
+    _id: resume.jobDescriptionId,
+    createdBy: recruiterId,
+  }).select('_id');
 
-  if (resumeProcessings === null) {
-    throw new AppError('resumeProcessings not found', 404);
+  if (!job) {
+    throw new AppError('Unauthorized access', 403);
   }
 
-  return resumeProcessings;
+  // 3️⃣ Shape frontend-ready response
+  return {
+    resumeProcessingId: resume._id,
+    resumeUrl: resume.resumeUrl,
+    externalResumeId: resume.externalResumeId,
+
+    status: resume.status,
+    passFail: resume.passFail,
+    rank: resume.rank,
+    finalScore: resume.finalScore,
+
+    explanation: resume.explanation, // Phase 5A
+
+    analysisStatus: resume.analysisStatus,
+    analysis: resume.analysis ?? null,
+
+    preFilter: resume.preFilter, // optional: keep or hide later
+    createdAt: resume.createdAt,
+    updatedAt: resume.updatedAt,
+  };
 };
 
 export async function getAnalysisStatusService(resumeProcessingId: string) {

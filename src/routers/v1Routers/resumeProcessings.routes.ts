@@ -4,7 +4,7 @@ import {
   analyzeResumeController,
   createResumeProcessingController,
   getAnalysisStatusController,
-  getResumeProcessingController,
+  getResumeProcessingByIdController,
   resumeProcessingCallbackController,
   updateResumeProcessingController,
 } from '../../controllers/resumeProcessings.controller';
@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.post('/create', authMiddleware, createResumeProcessingController);
 
-router.get('/:batchId', getResumeProcessingController);
+router.get('/:resumeProcessingId', authMiddleware, getResumeProcessingByIdController);
 
 router.post('/update', authMiddleware, updateResumeProcessingController);
 

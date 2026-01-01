@@ -29,7 +29,7 @@ Recruiter ownership is enforced on all job and resume‑scoped endpoints.
 
 ### 1️⃣ Get Recruiter Jobs
 
-**GET** `/api/job/`
+**GET** `/api/v1/job/`
 
 **Response**
 
@@ -50,7 +50,7 @@ Recruiter ownership is enforced on all job and resume‑scoped endpoints.
 
 ### 2️⃣ Get Job Metadata
 
-**GET** `/api/job/:jobDescriptionId`
+**GET** `/api/v1/job/:jobDescriptionId`
 
 **Response**
 
@@ -76,7 +76,7 @@ Recruiter ownership is enforced on all job and resume‑scoped endpoints.
 
 ### 3️⃣ Get Ranked Resumes for Job (Main Dashboard Table)
 
-**GET** `/api/job/:jobDescriptionId/resumes`
+**GET** `/api/v1/job/:jobDescriptionId/resumes`
 
 **Query Params (optional)**
 
@@ -117,7 +117,7 @@ Recruiter ownership is enforced on all job and resume‑scoped endpoints.
 
 ### 4️⃣ Progressive Updates (Polling)
 
-**GET** `/api/job/:jobDescriptionId/updates?since=<ISO_TIMESTAMP>`
+**GET** `/api/v1/job/:jobDescriptionId/updates?since=<ISO_TIMESTAMP>`
 
 **Response**
 
@@ -145,7 +145,7 @@ Recruiter ownership is enforced on all job and resume‑scoped endpoints.
 
 ### 5️⃣ Get Resume Detail
 
-**GET** `/api/processing/:resumeProcessingId`
+**GET** `/api/v1/processing/:resumeProcessingId`
 
 **Response**
 
@@ -179,7 +179,7 @@ Recruiter ownership is enforced on all job and resume‑scoped endpoints.
 
 ### 6️⃣ Register Uploaded Resumes (Metadata Only)
 
-**POST** `/api/resume/save-meta`
+**POST** `/api/v1/resume/save-meta`
 
 **Request**
 
@@ -215,7 +215,7 @@ Recruiter ownership is enforced on all job and resume‑scoped endpoints.
 
 ### 7️⃣ Trigger Deep Analysis (Manual)
 
-**POST** `/api/processing/:resumeProcessingId/analyze`
+**POST** `/api/v1/processing/:resumeProcessingId/analyze`
 
 **Request**
 
@@ -244,7 +244,7 @@ Recruiter ownership is enforced on all job and resume‑scoped endpoints.
 
 ### 8️⃣ Create Batch (Start Processing)
 
-**POST** `/api/batch/create`
+**POST** `/api/v1/batch/create`
 
 **Request**
 

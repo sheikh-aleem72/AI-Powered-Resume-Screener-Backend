@@ -155,7 +155,6 @@ Phase 6 exposes a **frontend-ready API surface**. Backend is now frozen.
 | GET    | /api/jobs                | Recruiter dashboard (all jobs)              |
 | GET    | /api/jobs/:jobId         | Job metadata                                |
 | GET    | /api/jobs/:jobId/resumes | Ranked resume table (paginated, filterable) |
-| GET    | /api/jobs/:jobId/updates | Poll-based progressive updates              |
 
 ---
 
@@ -164,8 +163,7 @@ Phase 6 exposes a **frontend-ready API surface**. Backend is now frozen.
 | Method | Endpoint                       | Description                                   |
 | ------ | ------------------------------ | --------------------------------------------- |
 | GET    | /api/resumes/:resumeId         | Resume detail (scores, explanation, analysis) |
-| POST   | /api/resumes/register          | Register uploaded resume metadata             |
-| POST   | /api/resumes/:resumeId/analyze | Manual deep analysis trigger                  |
+
 
 ---
 

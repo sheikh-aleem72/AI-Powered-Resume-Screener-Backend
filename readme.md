@@ -152,9 +152,9 @@ Phase 6 exposes a **frontend-ready API surface**. Backend is now frozen.
 
 | Method | Endpoint                 | Description                                 |
 | ------ | ------------------------ | ------------------------------------------- |
-| GET    | /api/jobs                | Recruiter dashboard (all jobs)              |
-| GET    | /api/jobs/:jobId         | Job metadata                                |
-| GET    | /api/jobs/:jobId/resumes | Ranked resume table (paginated, filterable) |
+| GET    | /api/v1/jobs                | Recruiter dashboard (all jobs)              |
+| GET    | /api/v1/jobs/:jobId         | Job metadata                                |
+| GET    | /api/v1/jobs/:jobId/resumes | Ranked resume table (paginated, filterable) |
 
 ---
 
@@ -162,7 +162,7 @@ Phase 6 exposes a **frontend-ready API surface**. Backend is now frozen.
 
 | Method | Endpoint                       | Description                                   |
 | ------ | ------------------------------ | --------------------------------------------- |
-| GET    | /api/resumes/:resumeId         | Resume detail (scores, explanation, analysis) |
+| GET    | /api/v1/processing/:resumeProcessingId         | Resume detail (scores, explanation, analysis) |
 
 
 ---
@@ -171,7 +171,7 @@ Phase 6 exposes a **frontend-ready API surface**. Backend is now frozen.
 
 | Method | Endpoint     | Description                        |
 | ------ | ------------ | ---------------------------------- |
-| POST   | /api/batches | Create batch & enqueue resume jobs |
+| POST   | /api/v1/batch/create | Create batch & enqueue resume jobs |
 
 This is the **only API that starts processing**.
 

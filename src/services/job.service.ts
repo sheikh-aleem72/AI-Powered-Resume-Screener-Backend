@@ -18,6 +18,12 @@ interface GetJobResumesParams {
   passFail?: string | undefined;
 }
 
+interface GetJobUpdatesParams {
+  jobId: string;
+  recruiterId: string;
+  since: Date | null;
+}
+
 export const createJobService = async (payload: Partial<IJob>) => {
   // Basic business validation can go here (e.g., ensure required_skills not empty)
   if (!payload.title) throw new Error('Job title required');
@@ -109,5 +115,56 @@ export const getJobResumes = async ({
     limit,
     total,
     resumes,
+  };
+};
+
+export const getJobUpdates = async ({ jobId, recruiterId, since }: GetJobUpdatesParams) => {
+  // 1️⃣ Ownership guard
+  const job = await JobModel.findOne({
+    _id: jobId,
+    createdBy: recruiterId,
+  }).select('_id');
+
+  if (!job) {
+    throw new AppError('Job not found or unauthorized', 404);
+  }
+
+  // 2️⃣ Build filter
+  const filter: any = {
+    jobDescriptionId: jobId,
+  };
+
+  if (since) {
+    filter.updatedAt = { $gt: since };
+  }
+
+  // 3️⃣ Fetch only minimal changed fields
+  const resumes = await ResumeProcessing.find(filter)
+    .select({
+      _id: 1,
+      status: 1,
+      analysisStatus: 1,
+      passFail: 1,
+      rank: 1,
+      finalScore: 1,
+      explanation: 1,
+      updatedAt: 1,
+    })
+    .sort({ updatedAt: 1 })
+    .lean();
+
+  return {
+    jobId,
+    serverTime: new Date().toISOString(),
+    updates: resumes.map((r) => ({
+      resumeId: r._id,
+      status: r.status,
+      analysisStatus: r.analysisStatus,
+      passFail: r.passFail,
+      rank: r.rank,
+      finalScore: r.finalScore,
+      explanation: r.explanation,
+      updatedAt: r.updatedAt,
+    })),
   };
 };

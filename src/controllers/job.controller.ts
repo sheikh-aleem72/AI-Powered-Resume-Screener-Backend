@@ -1,6 +1,8 @@
 import { Request as ExRequest, Response } from 'express';
 import * as service from '../services/job.service';
 import { AppError } from '../utils/AppErrors';
+import { success } from 'zod';
+import { updateResumeAnalysis } from '../repositories/analysis.repository';
 
 interface AuthRequest extends ExRequest {
   user?: {
@@ -183,6 +185,44 @@ export const getJobResumesController = async (req: AuthRequest, res: Response) =
 
     // ❌ Handle unexpected errors
     console.error('Error in getJobResumesController:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong on our side',
+    });
+  }
+};
+
+export const getJobUpdatesController = async (req: AuthRequest, res: Response) => {
+  try {
+    const recruiterId = req.user!.id;
+    const { jobId } = req.params;
+
+    if (!recruiterId || !jobId) {
+      throw new AppError('All fields are required!', 400);
+    }
+
+    const since = req.query.since ? new Date(req.query.since as string) : null;
+
+    const updates = await service.getJobUpdates({
+      jobId,
+      recruiterId,
+      since,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: updates,
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        status: error.statusCode,
+        message: error.message,
+      });
+    }
+
+    // ❌ Handle unexpected errors
+    console.error('Error in getJobUpdates:', error);
     return res.status(500).json({
       status: 'error',
       message: 'Something went wrong on our side',

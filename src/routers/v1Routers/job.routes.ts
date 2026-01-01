@@ -23,4 +23,7 @@ router.patch('/:id', authMiddleware, controller.updateJob);
 // Delete job by id
 router.delete('/:id', authMiddleware, controller.deleteJob);
 
+// Progressive Job Updates
+router.get('/:jobId/updates', authMiddleware, controller.getJobUpdatesController);
+
 export default router;

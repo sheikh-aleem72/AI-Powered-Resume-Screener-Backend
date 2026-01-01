@@ -4,7 +4,7 @@ import {
   analyzeResumeService,
   createResumeProcessingService,
   getAnalysisStatusService,
-  getResumeProcessingsService,
+  getResumeProcessingsByIdService,
   resumeProcessingCallbackService,
   updateResumeProcessingsService,
 } from '../services/resumeProcessing.service';
@@ -50,10 +50,15 @@ export const createResumeProcessingController = async (req: AuthRequest, res: Re
   }
 };
 
-export const getResumeProcessingController = async (req: AuthRequest, res: Response) => {
+export const getResumeProcessingByIdController = async (req: AuthRequest, res: Response) => {
   try {
-    const { batchId } = req.params;
-    const response = await getResumeProcessingsService(batchId!);
+    const { resumeProcessingId } = req.params;
+    const recruiterId = req.user!.id;
+
+    if (!resumeProcessingId || !recruiterId) {
+      throw new AppError('All fields are required!', 400);
+    }
+    const response = await getResumeProcessingsByIdService(resumeProcessingId, recruiterId);
 
     return res.status(200).json({
       success: true,
@@ -70,7 +75,7 @@ export const getResumeProcessingController = async (req: AuthRequest, res: Respo
     }
 
     // ❌ Handle unexpected errors
-    console.error('Error in getResumeProcessings:');
+    console.error('Error in getResumeProcessingsById:');
     return res.status(500).json({
       status: 'error',
       message: 'Something went wrong on our side',

@@ -32,16 +32,17 @@ export const createJob = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getJob = async (req: AuthRequest, res: Response) => {
+export const getJobById = async (req: AuthRequest, res: Response) => {
   try {
     const jobDescriptionId = req.params.id;
-    if (!jobDescriptionId) {
+    const recruiterId = req.user?.id;
+    if (!jobDescriptionId || !recruiterId) {
       return res.status(400).json({
         success: false,
-        message: 'Job id is required',
+        message: 'JobId or recruiterID is missing',
       });
     }
-    const job = await service.getJobService(jobDescriptionId);
+    const job = await service.getJobByIdService(jobDescriptionId, recruiterId);
     return res.status(200).json({ success: true, data: job });
   } catch (error) {
     if (error instanceof AppError) {
@@ -119,18 +120,17 @@ export const deleteJob = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const listJobs = async (req: AuthRequest, res: Response) => {
+export const getJobsByRecruiterController = async (req: AuthRequest, res: Response) => {
   try {
-    const { text, skill, experience, limit = 20, skip = 0 } = req.query;
+    const recruiterId = req.user?.id;
+    if (!recruiterId) {
+      return res.status(400).json({
+        success: false,
+        message: 'recruiterId is required',
+      });
+    }
 
-    const jobs = await service.listJobsService(
-      {
-        text: text as string,
-        skill: skill as string,
-        experience: experience ? Number(experience) : 0,
-      },
-      { limit: Number(limit), skip: Number(skip) },
-    );
+    const jobs = await service.getJobsByRecruiterService(recruiterId);
     return res.status(200).json({ success: true, data: jobs });
   } catch (error) {
     if (error instanceof AppError) {
@@ -141,7 +141,48 @@ export const listJobs = async (req: AuthRequest, res: Response) => {
     }
 
     // ❌ Handle unexpected errors
-    console.error('Error in parseResumeController:', error);
+    console.error('Error in getJobsByRecruiterController:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong on our side',
+    });
+  }
+};
+
+export const getJobResumesController = async (req: AuthRequest, res: Response) => {
+  try {
+    const recruiterId = req.user!.id;
+    const { jobId } = req.params;
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const status = req.query.status as string | undefined;
+    const passFail = req.query.passFail as string | undefined;
+
+    if (!jobId || !page || !limit) {
+      throw new AppError('All fields are required!', 400);
+    }
+
+    const result = await service.getJobResumes({
+      jobId,
+      recruiterId,
+      page,
+      limit,
+      status,
+      passFail,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        status: error.statusCode,
+        message: error.message,
+      });
+    }
+
+    // ❌ Handle unexpected errors
+    console.error('Error in getJobResumesController:', error);
     return res.status(500).json({
       status: 'error',
       message: 'Something went wrong on our side',

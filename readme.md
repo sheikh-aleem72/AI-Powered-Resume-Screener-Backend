@@ -1,342 +1,259 @@
-# AI-Powered Resume Screener - Backend
-
-## Introduction
-
-Welcome to the backend of **AI-Powered Resume Screener**, a robust web application designed to streamline the recruitment process by intelligently analyzing resumes.  
-This backend repo provides all the necessary APIs for user management, authentication, authorization, resume handling, job description management, and AI-driven resume analysis.
-
-This project focuses on building a **secure, scalable, and maintainable backend** using **Node.js, Express, TypeScript, and MongoDB**. It is designed to integrate seamlessly with a frontend application and provides a strong foundation for implementing advanced AI features in later stages.
-
 # 🚀 AI-Powered Resume Screener — Backend
 
 **Node.js + TypeScript + Express + MongoDB + Redis + Python RQ Workers**
 
-A scalable, production-grade backend for intelligently analyzing resumes, matching candidates to job descriptions, and processing large resume batches using a distributed worker system.
+A production-grade backend for intelligently screening resumes, ranking candidates against job descriptions, and processing large resume batches using a distributed worker architecture.
 
-This repository implements:
-
-- Authentication + Authorization
-- Secure resume upload & metadata management
-- AI-powered parsing (microservice based)
-- Job description management
-- Background batch processing (Stage 4)
-- Distributed queue workers with retries and backoff
-- Atomic MongoDB updates for concurrency safety
-
-This project is designed for **real companies**, **ATS platforms**, and **AI-driven recruiting systems**.
+This backend is **feature-complete up to Stage 4 – Phase 6** and is now **frontend-ready**.
 
 ---
 
-# 🏗️ **Tech Stack**
+## 🧠 What This System Does
 
-### **Backend**
+- Recruiters create jobs
+- Upload resumes (metadata-only)
+- Trigger batch processing
+- Get instant embedding-based ranking
+- Receive progressive enrichment via deep AI analysis (on-demand)
+- Review transparent explanations for every resume (pass or fail)
+
+This system is designed as a **real ATS-grade backend**, not a demo or toy project.
+
+---
+
+## 🏗️ Tech Stack
+
+### Backend
 
 - Node.js
 - Express.js
 - TypeScript
 - MongoDB + Mongoose
 - Redis (queue broker)
-- BullMQ-style publishing (Node → Redis)
-- RQ Workers (Python)
 
-### **AI / Microservices**
+### Workers / Async Processing
 
-- Gemini API (Parsing & Analysis)
-- Python Resume Parser Service
-- Distributed Worker Architecture
+- Python RQ Workers
+- Redis queues + retry scheduler
+- Exponential backoff + idempotency
 
-### **Security**
+### AI / Intelligence
 
-- JWT (Access + Refresh tokens)
-- OTP Email Verification (Nodemailer)
-- Password hashing (bcryptjs)
+- Gemini API (parsing + deep analysis)
+- Local embedding model (MiniLM)
+- Deterministic ranking + scoring pipeline
 
-### **File Storage**
+### Security
 
-- Cloudinary (resume uploads)
+- JWT (access + refresh tokens)
+- OTP-based email verification
+- bcrypt password hashing
+
+### File Storage
+
+- Cloudinary (resume uploads – frontend owned)
 
 ---
 
-# 🧠 **System Architecture (2025 Upgrade — Stage 4)**
+## 🧠 System Architecture (Stage 4 – Final)
 
 ```
-
-Client → Node API → MongoDB
-↓
-Redis Queue
-↓
+Client (Frontend)
+   ↓
+Node API (Orchestrator)
+   ↓
+MongoDB (Source of Truth)
+   ↓
+Redis Queues
+   ↓
 Python RQ Workers
-↓
-Node Callback Handler
-↓
-Atomic DB Update
-
+   ↓
+Node Callback Handlers
+   ↓
+Atomic MongoDB Updates
 ```
 
-### ⭐ Key Highlights
+### Architectural Principles
 
-✔ Fully asynchronous resume processing  
-✔ Multi-worker concurrency support  
-✔ Atomic DB updates (no lost updates)  
-✔ Exponential retry & backoff  
-✔ Batch-level tracking & progress APIs  
-✔ Resumable job pipeline
-
-This architecture supports both **high throughput (50+ resumes per batch)** and **fault-tolerant processing**.
+- Job-centric design (Job is the primary aggregation unit)
+- ResumeProcessing is the single source of truth per resume × job
+- Workers own all AI logic
+- Node owns orchestration and data exposure
+- No joins or aggregations on read paths
 
 ---
 
-# 🔥 **Core Features**
+## 🔥 Core Functional Areas
 
-## 1. **Authentication & User Management**
+### 1️⃣ Authentication & User Management
 
 - Signup with OTP verification
 - Secure login with JWT
 - Refresh token rotation
-- Role & organization support
+- Recruiter-scoped authorization
 
 ---
 
-## 2. **Resume Upload + Metadata Management**
+### 2️⃣ Resume Upload & Metadata Registration
 
-- Upload to Cloudinary
-- Store metadata: name, URL, size, format
-- Resume ID auto-generated (`RESUME_YYYYMMDD_XXXX`)
-
----
-
-## 3. **Job Description Management**
-
-- Create, update, list, delete
-- Required skills, preferred skills, experience
+- Resumes uploaded directly from frontend to Cloudinary
+- Backend only registers metadata
+- Duplicate prevention at job level
+- No processing triggered at upload time
 
 ---
 
-## 4. **AI-Powered Resume Parsing & Analysis**
+### 3️⃣ Job Management
 
-- Microservice architecture
-- Uses Gemini API for parsing
-- Extracts: education, experience, skills, achievements
-- Analysis engine compares resume vs job description
-
----
-
-# ⚡ **Stage 4: High-Performance Batch Processing Pipeline**
-
-Batch processing allows a recruiter to upload **multiple resumes at once (up to 50)** and process them asynchronously.
-
-## ✔ 1. Batch Creation API
-
-`POST /api/v1/batch/create`
-
-- Generate `batchId` (`BATCH_YYYYMMDD_XXXX`)
-- Validate:
-  - MAX_RESUMES_PER_BATCH = 50
-  - MAX_TOTAL_BYTES_PER_BATCH = 200MB
-- Store batch in MongoDB
-- Publish per-resume jobs to Redis queue
+- Create and manage job descriptions
+- Required skills, preferred skills, experience criteria
+- Job is the primary unit for dashboard and ranking
 
 ---
 
-## ✔ 2. Redis Queue (Node → Python)
+## ⚡ Stage 4 — High-Performance Resume Processing Pipeline
 
-Node publishes jobs in RQ-compatible format:
+### ✔ Batch-Oriented Processing
 
-```json
-{
-  "batchId": "BATCH_20251209_0001",
-  "jobDescriptionId": "JOB_123",
-  "resumeId": "RESUME_20251209_0007",
-  "resumeUrl": "https://..."
-}
-```
+- Recruiter selects resumes and triggers a batch
+- Batch is the **only entry point** to processing
+- Each resume becomes an independent background job
 
-Each resume = 1 background job.
+### ✔ Distributed Workers
 
----
+- Multiple Python workers process resumes concurrently
+- Parsing, embeddings, pre-filtering, ranking handled by workers
+- Retries with exponential backoff
 
-## ✔ 3. Python RQ Worker
+### ✔ Atomic Callbacks
 
-- Fetches job from Redis
-- Marks resume as **processing**
-- Simulates/executes parsing
-- Retries failures automatically
-- Sends callback to Node API when done
-
-Features:
-
-- Multi-worker support (4+ workers)
-- Exponential backoff
-- Retry scheduler
+- Workers call back Node when a resume finishes
+- Node updates Mongo using atomic `$inc` and `$set`
+- Safe under high concurrency
 
 ---
 
-## ✔ 4. Callback Handler (Node)
+## 🧩 Phase 4.4–5 Summary (Brain of the System)
 
-The Node server receives:
-
-```json
-{
-  "batchId": "...",
-  "resumeId": "...",
-  "status": "completed" | "failed"
-}
-```
-
-### 🔒 Uses **atomic MongoDB updates**
-
-This prevents concurrency issues like **lost updates**, especially when 20+ workers push callbacks simultaneously.
-
-```ts
-await Batch.updateOne(
-  { batchId, 'resumes.resumeId': resumeId },
-  {
-    $set: { 'resumes.$.status': status },
-    $inc: {
-      processedResumes: 1,
-      completedResumes: status === 'completed' ? 1 : 0,
-      failedResumes: status === 'failed' ? 1 : 0,
-    },
-  },
-);
-```
-
-Guaranteed correctness even under high concurrency.
+- Deterministic embedding text generation
+- Resume & job embeddings stored per ResumeProcessing
+- Pre-filtering with pass/fail reasons
+- Weighted ranking with finalScore + finalRank
+- Transparent explanations (Phase 5A)
+- On-demand deep LLM analysis (Phase 5B)
 
 ---
 
-## ✔ 5. Batch Status API
+## 🚦 Phase 6 — Recruiter Dashboard APIs (FINAL)
 
-`GET /api/v1/batch/:batchId`
+Phase 6 exposes a **frontend-ready API surface**. Backend is now frozen.
 
-Returns live status:
+### Job / Dashboard APIs
 
-```json
-{
-  "batchId": "...",
-  "status": "processing",
-  "processedResumes": 13,
-  "completedResumes": 13,
-  "failedResumes": 0,
-  "totalResumes": 25,
-  "resumes": [ ... ]
-}
-```
+| Method | Endpoint                 | Description                                 |
+| ------ | ------------------------ | ------------------------------------------- |
+| GET    | /api/jobs                | Recruiter dashboard (all jobs)              |
+| GET    | /api/jobs/:jobId         | Job metadata                                |
+| GET    | /api/jobs/:jobId/resumes | Ranked resume table (paginated, filterable) |
+| GET    | /api/jobs/:jobId/updates | Poll-based progressive updates              |
 
 ---
 
-# 📚 **API Documentation (Overview)**
+### Resume APIs
 
-### **Auth**
-
-| Method | Endpoint            | Description                 |
-| ------ | ------------------- | --------------------------- |
-| POST   | /auth/signup        | Create user & send OTP      |
-| POST   | /auth/verify-otp    | Verify OTP for signup/reset |
-| POST   | /auth/signin        | Login (JWT)                 |
-| POST   | /auth/refresh-token | Refresh access token        |
+| Method | Endpoint                       | Description                                   |
+| ------ | ------------------------------ | --------------------------------------------- |
+| GET    | /api/resumes/:resumeId         | Resume detail (scores, explanation, analysis) |
+| POST   | /api/resumes/register          | Register uploaded resume metadata             |
+| POST   | /api/resumes/:resumeId/analyze | Manual deep analysis trigger                  |
 
 ---
 
-### **Resume Mgmt**
+### Processing Trigger
 
-| Method | Endpoint             | Description          |
-| ------ | -------------------- | -------------------- |
-| POST   | /resume/save-meta    | Save resume metadata |
-| POST   | /resume/parse-resume | Parse resume via AI  |
+| Method | Endpoint     | Description                        |
+| ------ | ------------ | ---------------------------------- |
+| POST   | /api/batches | Create batch & enqueue resume jobs |
 
----
-
-### **Job Description**
-
-| Method | Endpoint | Description            |
-| ------ | -------- | ---------------------- |
-| POST   | /job     | Create job description |
-| GET    | /job     | List all jobs          |
-| PATCH  | /job/:id | Update                 |
-| DELETE | /job/:id | Delete                 |
+This is the **only API that starts processing**.
 
 ---
 
-### **Batch Processing (Stage 4)**
+## 📊 Dashboard Performance Optimizations
 
-| Method | Endpoint        | Description                     |
-| ------ | --------------- | ------------------------------- |
-| POST   | /batch/create   | Create batch & enqueue jobs     |
-| GET    | /batch/:batchId | Get batch status                |
-| POST   | /batch/update   | Worker → Node callback endpoint |
+### Denormalized Job Counters
 
----
+Stored directly on Job:
 
-# ⚙️ **Environment Variables**
+- totalResumes
+- completedResumes
+- failedResumes
+- lastUpdatedAt
 
-```env
-PORT=5000
-MONGODB_URI=
-JWT_ACCESS_SECRET=
-JWT_REFRESH_SECRET=
-SMTP_HOST=
-SMTP_PORT=
-SMTP_SECURE=
-SMTP_USER=
-SMTP_PASS=
-EMAIL_FROM=
+Updated during:
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
+- Batch creation
+- Resume processing callbacks
 
-# Redis
-REDIS_URL=redis://127.0.0.1:6379
-
-# Resume Parsing Service
-PARSER_SERVICE_URL=http://localhost:9000/parse
-```
+No joins. No aggregation queries.
 
 ---
 
-# 🧪 **Testing (E2E Tested 2025)**
+### ResumeProcessing Enhancements
 
-A full end-to-end test verifies:
-
-- Node publishes 25+ jobs
-- Redis receives all jobs
-- Python multi-workers process them concurrently
-- Retry logic handles failures
-- Node callback handler updates Mongo atomically
-- Batch reaches `status=completed`
+- Added top-level `passFail` field (passed / failed)
+- Derived once by worker
+- Used for clean filtering and UI display
 
 ---
 
-# 📈 **Performance**
+## 🔄 Progressive UX Policy
 
-- Processes **50 resumes per batch**
-- Supports **4–8 workers**
-- Zero lost updates
-- Queue operations: O(1)
-- Mongo concurrency: 100% safe (atomic updates)
-
----
-
-# 🔮 **Next Steps (Stage 5+)**
-
-- Vector embeddings for resume-job matching
-- Global ranking algorithm
-- Recruiter dashboards + analytics
-- Websocket live updates
-- Resume scoring model improvements
-- Batch-level summary insights
+- Polling-based updates (no WebSockets)
+- Embedding-based ranking is canonical
+- LLM analysis is enrichment only
+- Resume rows update in-place
 
 ---
 
-# 🤝 **Contributing**
+## 🧪 Testing Status
 
-Contributions are welcome!
-Follow TypeScript coding conventions and maintain architectural consistency.
+- End-to-end pipeline tested with large batches
+- Multiple workers verified
+- Retry + backoff validated
+- Atomic updates confirmed under concurrency
 
 ---
 
-# **Developed By**
+## 📌 Project Status
 
-_Shekh Aalim_
+✅ Stage 4 complete up to Phase 6
+✅ Backend feature-frozen
+✅ Frontend development can proceed
+⏸ Phase 8–11 deferred (cost controls, observability, hardening)
+
+---
+
+## 🔮 Roadmap (Deferred)
+
+- Phase 8: Cost controls, quotas, telemetry
+- Phase 9: Metrics, alerts, observability dashboards
+- Phase 10: Security hardening & staged rollout
+- Phase 11: Enterprise & advanced features
+
+---
+
+## 🤝 Contributing
+
+Follow existing architecture and TypeScript conventions.
+Backend APIs are frozen; new features should target frontend or later phases.
+
+---
+
+## 👨‍💻 Developed By
+
+### $SHEKH$ $AALIM$
+
+- [LinkedIn](https://www.linkedin.com/in/shekh-aalim-467b25240/)
+- [Instagram](https://www.linkedin.com/in/shekh-aalim-467b25240/)
+- [Mail - sheikhaleem363@gmail.com]()

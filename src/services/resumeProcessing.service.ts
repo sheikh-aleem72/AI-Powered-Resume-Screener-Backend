@@ -1,5 +1,6 @@
 import { publishAnalysisJob } from '../queues/analysisQueue';
 import { BatchModel } from '../schema/batch.model';
+import { JobModel } from '../schema/job.model';
 import { ResumeProcessing } from '../schema/resumeProcessings.model.';
 import { AppError } from '../utils/AppErrors';
 import { Types } from 'mongoose';
@@ -93,18 +94,47 @@ export const createResumeProcessingService = async (
   return newResumeProcessing;
 };
 
-export const getResumeProcessingsService = async (batchId: string) => {
-  if (batchId === null) {
-    throw new AppError('batchId is required', 400);
+export const getResumeProcessingsByIdService = async (
+  resumeProcessingId: string,
+  recruiterId: string,
+) => {
+  // 1. Fetch resume processing record
+  const resume = await ResumeProcessing.findById(resumeProcessingId).lean();
+
+  if (!resume) {
+    return null;
   }
 
-  const resumeProcessings = await ResumeProcessing.find({ batchId });
+  // 2. Ownership check via Job
+  const job = await JobModel.findOne({
+    _id: resume.jobDescriptionId,
+    createdBy: recruiterId,
+  }).select('_id');
 
-  if (resumeProcessings === null) {
-    throw new AppError('resumeProcessings not found', 404);
+  if (!job) {
+    throw new AppError('Unauthorized access', 403);
   }
 
-  return resumeProcessings;
+  // 3️⃣ Shape frontend-ready response
+  return {
+    resumeProcessingId: resume._id,
+    resumeUrl: resume.resumeUrl,
+    externalResumeId: resume.externalResumeId,
+
+    status: resume.status,
+    passFail: resume.passFail,
+    rank: resume.rank,
+    finalScore: resume.finalScore,
+
+    explanation: resume.explanation, // Phase 5A
+
+    analysisStatus: resume.analysisStatus,
+    analysis: resume.analysis ?? null,
+
+    preFilter: resume.preFilter, // optional: keep or hide later
+    createdAt: resume.createdAt,
+    updatedAt: resume.updatedAt,
+  };
 };
 
 export async function getAnalysisStatusService(resumeProcessingId: string) {
@@ -199,17 +229,30 @@ export const resumeProcessingCallbackService = async (payload: ResumeProcessingC
   // 3. Update Batch atomically
   const batch = await BatchModel.findOneAndUpdate({ batchId }, update, { new: true });
 
+  // 4. Prepare atomic job update and update job
+  const jobUpdate: any = {
+    $inc: {},
+  };
+
+  if (status === 'completed') {
+    jobUpdate.$inc.completedResumes = 1;
+  } else if (status === 'failed') {
+    jobUpdate.$inc.failedResumes = 1;
+  }
+
+  await JobModel.updateOne({ _id: processing.jobDescriptionId }, jobUpdate);
+
   if (!batch) {
     throw new AppError('Batch not found', 404);
   }
 
-  // 4. Finalize batch if all done
+  // 5. Finalize batch if all done
   if (batch.completedResumes + batch.failedResumes >= batch.totalResumes) {
     batch.status = 'completed';
     await batch.save();
   }
 
-  // 5. Mark ResumeProcessing as accounted
+  // 6. Mark ResumeProcessing as accounted
   await ResumeProcessing.updateOne({ _id: resumeProcessingId }, { $set: { batchAccounted: true } });
 
   return {

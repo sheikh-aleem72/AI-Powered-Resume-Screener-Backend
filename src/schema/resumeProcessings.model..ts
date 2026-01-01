@@ -118,6 +118,12 @@ const ResumeProcessingSchema = new Schema(
       },
     },
 
+    passFail: {
+      type: String,
+      enum: ['passed', 'failed'],
+      index: true,
+    },
+
     // ----  Ranking ----
     finalScore: {
       type: Number,

@@ -8,11 +8,14 @@ const router = Router();
 // Create job
 router.post('/', authMiddleware, validateJobCreation, controller.createJob);
 
-// Get all jobs
-router.get('/', controller.listJobs);
-
 // Get job by id
-router.get('/:id', controller.getJob);
+router.get('/:id', authMiddleware, controller.getJobById);
+
+// Get jobs by recruiter
+router.get('/', authMiddleware, controller.getJobsByRecruiterController);
+
+// Get job resumes
+router.get('/:jobId/resumes', authMiddleware, controller.getJobResumesController);
 
 // Update job
 router.patch('/:id', authMiddleware, controller.updateJob);

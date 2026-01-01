@@ -1,7 +1,7 @@
 import { analyze_resume } from '../utils/analyzerAPI';
 import { AppError } from '../utils/AppErrors';
 import { createAnalysisService, findAnalysisByResumeIdAndJobIdService } from './analysis.service';
-import { getJobService } from './job.service';
+import { getJobByIdService } from './job.service';
 import { parseAndSaveResumeService } from './parsedResume.service';
 
 export const analyzeResumeService = async (resumeUrl: string, jobDescriptionId: string) => {
@@ -10,7 +10,8 @@ export const analyzeResumeService = async (resumeUrl: string, jobDescriptionId: 
 
   // 2. Analyze Resume
   // Get job description from jobId
-  const jobDescription = await getJobService(jobDescriptionId);
+  // const jobDescription = await getJobService(jobDescriptionId);
+  const jobDescription = null;
   if (jobDescription == null) {
     throw new AppError('Job Description not found!', 404);
   }

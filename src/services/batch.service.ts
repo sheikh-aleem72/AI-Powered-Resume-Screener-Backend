@@ -20,7 +20,7 @@ export const createBatchService = async (data: {
 }) => {
   const { jobDescriptionId, resumes, size } = data;
 
-  console.log('Resumes: ', resumes);
+  // console.log('Resumes: ', resumes);
   if (!jobDescriptionId || !resumes || resumes.length === 0) {
     throw new AppError('jobDescriptionId and resumes are required', 400);
   }

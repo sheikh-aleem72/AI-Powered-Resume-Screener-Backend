@@ -30,6 +30,7 @@ export const getJobsByRecruiter = async (id: string) => {
       createdAt: 1,
       totalResumes: 1,
       completedResumes: 1,
+      failedResumes: 1,
       updatedAt: 1,
     })
     .sort({ createdAt: -1 })

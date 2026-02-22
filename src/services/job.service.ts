@@ -8,6 +8,7 @@ import {
 } from '../repositories/job.repository';
 import { AppError } from '../utils/AppErrors';
 import { ResumeProcessing } from '../schema/resumeProcessings.model.';
+import mongoose from 'mongoose';
 
 interface GetJobResumesParams {
   jobId: string;
@@ -77,36 +78,68 @@ export const getJobResumes = async ({
 
   // 2. Build filters
   const filter: any = {
-    jobDescriptionId: jobId,
+    jobDescriptionId: new mongoose.Types.ObjectId(jobId),
   };
 
   if (status) {
     filter.status = status;
   }
 
+  const isFailedFilter = filter.passFail === 'failed';
+
   if (passFail) {
+    console.log('passFail:', passFail);
     filter.passFail = passFail; // assumes stored by worker
   }
 
   // 3. Query resumes
-  const [resumes, total] = await Promise.all([
-    ResumeProcessing.find(filter)
-      .sort({ rank: 1 }) // CANONICAL ORDER
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .select({
+  const matchStage = { $match: filter };
+
+  const pipeline: any[] = [matchStage];
+
+  if (filter.passFail === 'failed') {
+    pipeline.push({
+      $sort: { createdAt: -1 },
+    });
+  } else {
+    pipeline.push(
+      {
+        $addFields: {
+          normalizedRank: {
+            $ifNull: ['$rank', 999999],
+          },
+        },
+      },
+      {
+        $sort: {
+          normalizedRank: 1,
+          createdAt: 1,
+        },
+      },
+    );
+  }
+
+  pipeline.push(
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
+    {
+      $project: {
         resumeObjectId: 1,
         externalResumeId: 1,
         rank: 1,
         finalScore: 1,
         status: 1,
-        passed: 1,
+        passFail: 1,
         analysisStatus: 1,
         explanation: 1,
         createdAt: 1,
-      })
-      .lean(),
+        rankingStatus: 1,
+      },
+    },
+  );
 
+  const [resumes, total] = await Promise.all([
+    ResumeProcessing.aggregate(pipeline),
     ResumeProcessing.countDocuments(filter),
   ]);
 

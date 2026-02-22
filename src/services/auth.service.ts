@@ -37,7 +37,7 @@ export const signupService = async (
 ) => {
   // 1️⃣ Check if user exists
   const existingUser: HydratedDocument<IUser> | null = await findUserByEmail(email);
-  if (existingUser) throw new Error('User already exists');
+  if (existingUser) throw new AppError('User already exists with this email', 400);
 
   // Create otp
   const { otp, otpHash, otpExpiresAt } = await requestOtpService(email, 'signup');
@@ -73,12 +73,12 @@ export const signinService = async (email: string, password: string): Promise<Au
   const user = await findUserByEmail(email);
   // console.log('Checkpoint 2 -> user: ', user);
 
-  if (!user) throw new AppError('Invalid email or password', 401);
+  if (!user) throw new AppError('No account found with this email', 401);
 
   // 2️⃣ Compare password
   const isMatch = await user.comparePassword(password);
   // console.log('checkpoint 3 -> isMatch', isMatch);
-  if (!isMatch) throw new AppError('Invalid email or password', 401);
+  if (!isMatch) throw new AppError('Password is incorrect', 401);
 
   // 3️⃣ Generate tokens
   const refreshToken = generateRefreshToken(user._id.toString());
@@ -185,6 +185,7 @@ export const requestOtpService = async (email: string, purpose: 'signup' | 'rese
   // Generate OTP and hashes
   const otp = generateOtp();
   const otpHash = await hashOtp(otp);
+  console.log(' OTP - ', otp);
 
   const expiresMinutes = Number(env.OTP_EXPIRES_MINUTES || 5);
   const otpExpiresAt = new Date(Date.now() + expiresMinutes * 60 * 1000);
@@ -248,6 +249,7 @@ export const verifyOtpService = async ({
         id: newUser._id.toString(),
         name: newUser.name,
         email: newUser.email,
+        role: newUser.role,
       },
     };
   } else {
